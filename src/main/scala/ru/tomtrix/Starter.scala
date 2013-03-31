@@ -17,6 +17,7 @@ object Server extends App {
   val actor = system.actorOf(Props[Cello], name = conf.getString("actors.name"))
   val actors = conf.getStringList("actors.others").toArray(Array("")).toList map {t => system.actorFor(s"akka://$systemname@$t")}
   println("Ready")
+  println(s"My name is ${conf.getString("actors.name")}")
 
   while(true)
     actors foreach {_ ! readLine()}

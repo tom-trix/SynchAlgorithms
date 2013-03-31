@@ -37,6 +37,7 @@
             <version>4.11</version>
             <scope>test</scope>
         </dependency>
+
         <!-- Akka-actor -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
@@ -90,30 +91,25 @@
                     </classpathContainers>
                 </configuration>
             </plugin>
+            <!-- plugin to build the executable jar file -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
                 <configuration>
+                    <excludes>
+                        <exclude>*.conf</exclude>
+                    </excludes>
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <mainClass>ru.tomtrix.Server</mainClass>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
+                        <manifestEntries>
+                            <Class-Path>.</Class-Path>
+                        </manifestEntries>
                     </archive>
-                </configuration>
-            </plugin>
-            <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>ru.tomtrix.Server</mainClass>
-                        </manifest>
-                    </archive>
-                    <descriptorRefs>
-                        <descriptorRef>jar-with-dependencies</descriptorRef>
-                    </descriptorRefs>
                 </configuration>
             </plugin>
         </plugins>
