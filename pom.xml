@@ -51,6 +51,14 @@
             <artifactId>akka-remote_2.10</artifactId>
             <version>2.1.2</version>
         </dependency>
+
+        <!-- Logger -->
+        <dependency>
+            <groupId>log4j</groupId>
+            <artifactId>log4j</artifactId>
+            <version>1.2.17</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -103,7 +111,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>ru.tomtrix.Server</mainClass>
+                            <mainClass>ru.tomtrix.Tester</mainClass>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
                         <manifestEntries>

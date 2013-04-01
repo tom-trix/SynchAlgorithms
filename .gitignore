@@ -1,2 +1,8 @@
 *.iml
+*.log
+*.timestamp
+*.class
 .idea/*
+target/classes/*
+target/maven-archiver/*
+target/surefire-reports/*
