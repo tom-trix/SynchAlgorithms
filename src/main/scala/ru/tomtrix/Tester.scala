@@ -1,12 +1,24 @@
 package ru.tomtrix
 
-object Tester extends App {
-  var communicator: Communicator = _
+import util.Random
+import compat.Platform
 
-  communicator = new Communicator(new ModelLoadable {
-    def startModelling() {
-      communicator.actors foreach {_ ! communicator.actorname}
-      communicator.actors foreach {_ ! communicator.actorname}
+object Tester extends App with IModel {
+  val state = None
+  var t: Double = 0
+  def getTime = t
+
+  def startModelling() {
+    logger debug "Start OK"
+    val rand = new Random(Platform.currentTime)
+    for (i <- 0 to rand.nextInt(10)) {
+      sendMessageToAll(Some("trix"))
+      t += rand.nextInt(10)
     }
-  })
+  }
+
+  override def handleMessage(m: EventMessage) {
+    super.handleMessage(m)
+    logger info s"Yahoo! Принято сообщение от ${m.sender} с меткой ${m.t}"
+  }
 }
