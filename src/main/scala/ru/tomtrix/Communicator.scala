@@ -6,7 +6,7 @@ import com.typesafe.config.ConfigFactory
 /**
  * Agent that is responsible for sending and receiving the messages
  */
-trait Communicator extends Loggable { self: IModel =>
+trait Communicator[T <: Serializable] extends Loggable { self: IModel[T] =>
 
   /** Actor to receive the messages (use <b>Props(new Receiver)</b>) */
   class Receiver extends Actor {

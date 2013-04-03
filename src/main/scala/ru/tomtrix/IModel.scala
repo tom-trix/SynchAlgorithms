@@ -3,11 +3,11 @@ package ru.tomtrix
 import synch.OptimisticSynchronizator
 
 /** Abstract trait that your model should implement */
-trait IModel extends Communicator with OptimisticSynchronizator {
-  def startModelling: Serializable
+trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchronizator[T] {
+  def startModelling: T
 
   private var time = 0d
-  private var state: Serializable = None
+  private var state: T = _
 
   def getTime = time
 
@@ -19,16 +19,16 @@ trait IModel extends Communicator with OptimisticSynchronizator {
 
   def getState = state
 
-  def setState(s: Serializable) {
+  def setState(s: T) {
     synchronized {
       state = s
     }
   }
 
-  def changeState(f: => Unit) {
+  def changeState(f: T => Unit) {
     snapshot(time)
     synchronized {
-      f
+      f(state)
     }
   }
 

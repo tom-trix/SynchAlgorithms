@@ -7,7 +7,7 @@ import ru.tomtrix.{EventMessage, IModel}
 /**
  * r
  */
-trait OptimisticSynchronizator { self: IModel =>
+trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
 
   private val stack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
 
@@ -29,7 +29,7 @@ trait OptimisticSynchronizator { self: IModel =>
       f = q!=null && q._1>t
     }
     if (q != null) {
-      setState(deserialize(q._2))
+      setState(deserialize(q._2).asInstanceOf[T])
       addTime(q._1 - getTime)
       $("rollback")
     }
