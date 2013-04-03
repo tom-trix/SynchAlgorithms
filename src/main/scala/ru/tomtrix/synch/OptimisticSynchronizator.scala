@@ -11,9 +11,9 @@ trait OptimisticSynchronizator { self: IModel =>
 
   private val stack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
 
-  private def shapshot(t: Double) {
+  def snapshot(t: Double) {
     stack push synchronized {
-      t -> serialize(state)
+      t -> serialize(getState)
     }
     if (stack.size() > 10000) {
       stack.pollLast()
@@ -28,15 +28,16 @@ trait OptimisticSynchronizator { self: IModel =>
       q = stack.poll()
       f = q!=null && q._1>t
     }
-    if (q != null) synchronized {
-      state = deserialize(q._2)
-      time = q._1
+    if (q != null) {
+      setState(deserialize(q._2))
+      addTime(q._1 - getTime)
+      $("rollback")
     }
   }
 
   def handleMessage(m: EventMessage) {
-    if (m.t < time)
+    if (m.t < getTime)
       rollback(m.t)
-    else shapshot(m.t)
+    else snapshot(m.t)
   }
 }

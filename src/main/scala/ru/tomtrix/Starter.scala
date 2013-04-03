@@ -5,8 +5,7 @@ package ru.tomtrix
  * This couldn't receive the messages
  */
 object Starter extends App with IModel {
-  var state: Serializable = None
-  def startModelling() {}
+  def startModelling = None
   while (true) {
     println("Press Enter to start...")
     readLine()

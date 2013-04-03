@@ -7,6 +7,7 @@
     <inceptionYear>2013</inceptionYear>
     <properties>
         <scala.version>2.10.1</scala.version>
+        <entrypoint>Tester</entrypoint>
     </properties>
 
     <repositories>
@@ -111,7 +112,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>ru.tomtrix.Tester</mainClass>
+                            <mainClass>ru.tomtrix.${entrypoint}</mainClass>
                             <classpathPrefix>lib/</classpathPrefix>
                         </manifest>
                         <manifestEntries>

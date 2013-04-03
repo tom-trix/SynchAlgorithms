@@ -4,10 +4,33 @@ import synch.OptimisticSynchronizator
 
 /** Abstract trait that your model should implement */
 trait IModel extends Communicator with OptimisticSynchronizator {
-  var time = 0d
-  var state: Serializable
+  def startModelling: Serializable
 
-  def startModelling()
+  private var time = 0d
+  private var state: Serializable = None
+
+  def getTime = time
+
+  def addTime(delta: Double) {
+    synchronized {
+      time += delta
+    }
+  }
+
+  def getState = state
+
+  def setState(s: Serializable) {
+    synchronized {
+      state = s
+    }
+  }
+
+  def changeState(f: => Unit) {
+    snapshot(time)
+    synchronized {
+      f
+    }
+  }
 
   def sendMessage(whom: String, m: Message) {
     actors.get(whom) map {_ ! m} getOrElse logger.error(s"No such an actor: $whom")

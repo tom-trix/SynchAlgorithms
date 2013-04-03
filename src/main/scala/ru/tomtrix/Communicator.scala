@@ -13,16 +13,16 @@ trait Communicator extends Loggable { self: IModel =>
     def receive = {
       case m: EventMessage => handleMessage(m)
       case m: InfoMessage => logger warn m.text
-      case StartMessage => startModelling()
+      case StartMessage => setState(startModelling)
       case _ => logger error "Unknown message"
     }
   }
 
   private val conf = ConfigFactory load()
 
-  private val systemname = conf getString "actors.system"
+  val systemname = conf getString "actors.system"
 
-  private val system = ActorSystem(systemname)
+  val system = ActorSystem(systemname)
 
   val actorname = conf getString "actors.name"
 
