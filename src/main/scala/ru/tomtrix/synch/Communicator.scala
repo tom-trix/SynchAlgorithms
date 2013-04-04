@@ -1,12 +1,11 @@
-package ru.tomtrix
+package ru.tomtrix.synch
 
-import akka.actor.{Actor, ActorSystem, Props}
 import com.typesafe.config.ConfigFactory
+import akka.actor.{Actor, ActorSystem, Props}
+import ru.tomtrix.synch.ApacheLogger._
 
-/**
- * Agent that is responsible for sending and receiving the messages
- */
-trait Communicator[T <: Serializable] extends Loggable { self: IModel[T] =>
+/** Agent that is responsible for sending and receiving the messages */
+trait Communicator[T <: Serializable] { self: IModel[T] =>
 
   /** Actor to receive the messages (use <b>Props(new Receiver)</b>) */
   class Receiver extends Actor {

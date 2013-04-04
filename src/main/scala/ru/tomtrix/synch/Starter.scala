@@ -1,9 +1,7 @@
-package ru.tomtrix
+package ru.tomtrix.synch
 
-/**
- * Dispatcher that after being run informs all the other logic processes to start<br>
- * This couldn't receive the messages
- */
+/** Dispatcher that informs all the other logic processes to start<br>
+ * This object can't receive the messages */
 object Starter extends App with IModel[None.type] {
   def startModelling = None
   while (true) {

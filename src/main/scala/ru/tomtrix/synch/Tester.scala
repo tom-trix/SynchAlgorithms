@@ -1,9 +1,10 @@
-package ru.tomtrix
+package ru.tomtrix.synch
 
 import util.Random
 import compat.Platform
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
+import ru.tomtrix.synch.ApacheLogger._
 
 case class W(var i: Long)
 

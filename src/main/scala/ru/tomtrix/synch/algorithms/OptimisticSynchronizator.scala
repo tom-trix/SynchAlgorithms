@@ -1,17 +1,17 @@
-package ru.tomtrix.synch
+package ru.tomtrix.synch.algorithms
 
 import java.util.concurrent.ConcurrentLinkedDeque
-import ru.tomtrix.Logg._
-import ru.tomtrix.Utils._
-import ru.tomtrix.{W, EventMessage, IModel}
+import ru.tomtrix.synch.Serializer._
+import ru.tomtrix.synch.ApacheLogger._
+import ru.tomtrix.synch.{ EventMessage, IModel}
 
-/**
- * r
- */
+/** Algorithm of classic optimistic synchronization */
 trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
 
+  /** stack to keep the previous states */
   private val stack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
 
+  /** Saves the state to a stack (to make it possible to rollback) */
   def snapshot() {
     synchronized {
       stack push getTime -> serialize(getState)
@@ -22,26 +22,27 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
     }
   }
 
+  /** Performs rollback to a prevoius consistent state
+   * @param t timestamp that corresponds to a prevoius consistent state */
   private def rollback(t: Double) {
     synchronized {
       log"Start rollback"
-      log"stack = $stack"
       var f = true
       var q: (Double, Array[Byte]) = null
       while (f) {
         q = stack poll()
-        if (q!=null) log"q = $q (t=${q._1}, state = ${deserialize(q._2).asInstanceOf[W].i}})" else log"q=NULL"
         f = q != null && q._1 > t
       }
       if (q != null) {
-        logger debug s"time = $getTime, state = ${getState.asInstanceOf[W].i}"
-        log"rollback! (q = $q (t=${q._1}, state = ${deserialize(q._2).asInstanceOf[W].i}}))"
-        setStateAndTime(q._1, deserialize(q._2).asInstanceOf[T])
-        logger debug s"time = $getTime, state = ${getState.asInstanceOf[W].i}"
+        setStateAndTime(q._1, deserialize(q._2))
+        log"Rolled back to t = $getTime"
       }
     }
   }
 
+  /** Handles received messages<br>
+   * <b>ATTENTION! Don't forget to call <i>super</i> when overriding it!<b>
+   * @param m message to handle */
   def handleMessage(m: EventMessage) {
     if (m.t < getTime) rollback(m.t)
   }
