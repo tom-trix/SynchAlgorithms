@@ -13,7 +13,7 @@ trait Communicator[T <: Serializable] extends Loggable { self: IModel[T] =>
     def receive = {
       case m: EventMessage => handleMessage(m)
       case m: InfoMessage => logger warn m.text
-      case StartMessage => setState(startModelling)
+      case StartMessage => setStateAndTime(0, startModelling)
       case _ => logger error "Unknown message"
     }
   }

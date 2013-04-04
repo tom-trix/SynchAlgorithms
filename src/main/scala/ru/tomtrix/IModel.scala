@@ -11,23 +11,20 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
 
   def getTime = time
 
-  def addTime(delta: Double) {
-    synchronized {
-      time += delta
-    }
-  }
-
   def getState = state
 
-  def setState(s: T) {
+  def setStateAndTime(t: Double, s: T) {
+    snapshot()
     synchronized {
+      time = t
       state = s
     }
   }
 
-  def changeState(f: T => Unit) {
-    snapshot(time)
+  def changeStateAndTime(delta_t: Double)(f: T => Unit) {
+    snapshot()
     synchronized {
+      time += delta_t
       f(state)
     }
   }
