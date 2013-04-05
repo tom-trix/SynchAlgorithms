@@ -26,7 +26,7 @@ object Tester extends App with IModel[W] {
     new W(0)
   }
 
-  override def handleMessage(m: EventMessage) {
+  /*override def handleMessage(m: EventMessage) {
     super.handleMessage(m)
     logger info s"Yahoo! Принято сообщение от ${m.sender} с меткой ${m.t}"
     synchronized {
@@ -36,5 +36,5 @@ object Tester extends App with IModel[W] {
       }
       logger debug s"time = $getTime, state = ${getState.i}"
     }
-  }
+  }*/
 }

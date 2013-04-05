@@ -52,6 +52,7 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
    * @param whom receiver (actor name)
    * @param m message to send */
   def sendMessage(whom: String, m: Message) {
+    backupMessage(whom, m)
     actors.get(whom) map {_ ! m} getOrElse logger.error(s"No such an actor: $whom")
   }
 
@@ -72,7 +73,10 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
   /** Sends message <b>m</b> to all the actors listed in the conf-file
    * @param m message to send */
   def sendMessageToAll(m: Message) {
-    actors foreach {_._2 ! m}
+    actors foreach { t =>
+      backupMessage(t._1, m)
+      t._2 ! m
+    }
   }
 
   /**Sends InfoMessage to all the actors listed in the conf-file

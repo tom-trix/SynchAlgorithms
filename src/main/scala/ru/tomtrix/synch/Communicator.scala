@@ -11,6 +11,7 @@ trait Communicator[T <: Serializable] { self: IModel[T] =>
   class Receiver extends Actor {
     def receive = {
       case m: EventMessage => handleMessage(m)
+      case m: AntiMessage => handleMessage(m)
       case m: InfoMessage => logger warn m.text
       case StartMessage => setStateAndTime(0, startModelling)
       case _ => logger error "Unknown message"
