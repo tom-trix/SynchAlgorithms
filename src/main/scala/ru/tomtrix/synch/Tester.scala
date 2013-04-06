@@ -1,7 +1,7 @@
 package ru.tomtrix.synch
 
-import util.Random
-import compat.Platform
+import scala.util.Random
+import scala.compat.Platform
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import ru.tomtrix.synch.ApacheLogger._
@@ -26,9 +26,8 @@ object Tester extends App with IModel[W] {
     new W(0)
   }
 
-  /*override def handleMessage(m: EventMessage) {
-    super.handleMessage(m)
-    logger info s"Yahoo! Принято сообщение от ${m.sender} с меткой ${m.t}"
+  def onMessageReceived() {
+    popMessage
     synchronized {
       logger debug s"time = $getTime, state = ${getState.i}"
       changeStateAndTime(1 + rand.nextInt(10)){ t =>
@@ -36,5 +35,5 @@ object Tester extends App with IModel[W] {
       }
       logger debug s"time = $getTime, state = ${getState.i}"
     }
-  }*/
+  }
 }

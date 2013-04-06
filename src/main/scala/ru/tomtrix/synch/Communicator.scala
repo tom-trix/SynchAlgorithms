@@ -1,7 +1,7 @@
 package ru.tomtrix.synch
 
+import akka.actor._
 import com.typesafe.config.ConfigFactory
-import akka.actor.{Actor, ActorSystem, Props}
 import ru.tomtrix.synch.ApacheLogger._
 
 /** Agent that is responsible for sending and receiving the messages */

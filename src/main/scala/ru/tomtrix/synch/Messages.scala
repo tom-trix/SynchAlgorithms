@@ -15,27 +15,34 @@ sealed abstract class Message extends Serializable {
   }
 }
 
+object EmptyMessage extends Message {
+  val t = -1d
+  val sender = "Nobody"
+}
+
 /** Message exclusively for Starter (to inform the others to start modelling) */
-object StartMessage extends Message{
+object StartMessage extends Message {
   val t = -1d
   val sender = "Starter"
 }
 
-/** Information message used basicly for debugging
+/**
+ * Information message used basicly for debugging
  * @param sender name of actor dending the message
- * @param text message body */
+ * @param text message body
+ */
 case class InfoMessage(sender: String, text: String) extends Message {
   val t = -1d
 }
 
-/** Main message that brings the model event
+/**
+ * Main message that brings the model event
  * @param t timestamp
  * @param sender name of actor dending the message
- * @param data message body */
+ * @param data message body
+ */
 case class EventMessage(t: Double, sender: String, data: Serializable) extends Message
 
-/**
- * @param baseMsg 5 */
 case class AntiMessage(baseMsg: Message) extends Message {
   val t = baseMsg.t
   val sender = baseMsg.sender
