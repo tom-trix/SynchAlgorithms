@@ -43,7 +43,7 @@ case class InfoMessage(sender: String, text: String) extends Message {
  */
 case class EventMessage(t: Double, sender: String, data: Serializable) extends Message
 
-case class AntiMessage(baseMsg: Message) extends Message {
+class AntiMessage(baseMsg: Message) extends Message {
   val t = baseMsg.t
   val sender = baseMsg.sender
   override val id = baseMsg.id

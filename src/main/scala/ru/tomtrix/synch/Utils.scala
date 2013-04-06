@@ -2,6 +2,7 @@ package ru.tomtrix.synch
 
 import java.io.{ObjectInputStream, ByteArrayInputStream, ObjectOutputStream, ByteArrayOutputStream}
 import org.apache.log4j.Logger
+import ru.tomtrix.synch.ApacheLogger._
 
 /** Log4j apache logger*/
 object ApacheLogger {
@@ -57,5 +58,20 @@ object Serializer {
     ois close()
     bais close()
     result
+  }
+}
+
+object SafeCode {
+  def safe[T](func: => T, finallyFunc: => Unit = {}): Option[T] = {
+    try {
+      Some(func)
+    }
+    catch {
+      case e: Exception => logger.error("SafeCode error", e)
+      None
+    }
+    finally {
+      finallyFunc
+    }
   }
 }
