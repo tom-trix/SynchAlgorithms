@@ -1,25 +1,14 @@
 package ru.tomtrix.synch
 
-import java.io.{ObjectInputStream, ByteArrayInputStream, ObjectOutputStream, ByteArrayOutputStream}
-import org.apache.log4j.Logger
-import ru.tomtrix.synch.ApacheLogger._
+import java.io._
 
 /** Log4j apache logger*/
-object ApacheLogger {
-  /** Instance of a logger */
-  lazy val logger = Logger getLogger this.getClass
-
-  /** Syntax sugar for "logger.debug(s)"
-    * @param s smth to log */
-  @deprecated("""Since Scala 2.10 use <log"hello world"> instead""", "2.10.0")
-  def $(s: => Any) {
-    logger debug s
-  }
-
+object ApacheLogger extends Loggable {
   /** String interpolation feature */
   implicit class LogHelper(val sc: StringContext) extends AnyVal {
     /** Syntax sugar for "logger.debug(s)"
-     * @since 2.10 */
+     * @since 2.10
+     * @example {{{ log"My age is ${h -1}" }}}*/
     def log(args: Any*) {
       val strings = sc.parts.iterator
       val expressions = args.iterator
@@ -61,13 +50,13 @@ object Serializer {
   }
 }
 
-object SafeCode {
+object SafeCode extends Loggable {
   def safe[T](func: => T, finallyFunc: => Unit = {}): Option[T] = {
     try {
       Some(func)
     }
     catch {
-      case e: Exception => logger.error("SafeCode error", e)
+      case e: Exception => logger error("SafeCode error", e)
       None
     }
     finally {

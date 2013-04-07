@@ -17,11 +17,16 @@ sealed abstract class Message extends Serializable {
 
 object EmptyMessage extends Message {
   val t = -1d
-  val sender = "Nobody"
+  val sender = ""
 }
 
 /** Message exclusively for Starter (to inform the others to start modelling) */
 object StartMessage extends Message {
+  val t = -1d
+  val sender = "Starter"
+}
+
+object StopMessage extends Message {
   val t = -1d
   val sender = "Starter"
 }

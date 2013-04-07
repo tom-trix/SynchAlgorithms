@@ -14,6 +14,7 @@ trait Communicator[T <: Serializable] { self: IModel[T] =>
       case m: AntiMessage => handleMessage(m)
       case m: InfoMessage => logger warn m.text
       case StartMessage => setStateAndTime(0, startModelling)
+      case StopMessage => stop()
       case _ => logger error "Unknown message"
     }
   }
@@ -28,9 +29,11 @@ trait Communicator[T <: Serializable] { self: IModel[T] =>
 
   val actor = system actorOf(Props(new Receiver), actorname)
 
-  val actornames = conf.getStringList("actors.others").toArray(Array("")).toList
+  val actorsAddr = conf.getStringList("actors.others").toArray(Array("")).toList
 
-  val actors = (actornames zip actornames.map{t => system actorFor s"akka://$systemname@$t"}).toMap
+  val actors = (actorsAddr zip actorsAddr.map{t => system actorFor s"akka://$systemname@$t"}).toMap
+
+  val actornames = actorsAddr map {_.split("/")(2)}
 
   logger info s"Actor $actor ($actorname) loaded"
 }

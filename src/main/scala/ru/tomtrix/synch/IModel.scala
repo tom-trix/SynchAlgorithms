@@ -1,7 +1,6 @@
 package ru.tomtrix.synch
 
 import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
-import ru.tomtrix.synch.ApacheLogger._
 
 /** Abstract trait that your model should implement */
 trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchronizator[T] {
@@ -12,6 +11,7 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
    * @return not-null instance of Serializable you want to consider as your model's state
    */
   def startModelling: T
+  def stopModelling()
 
   /** model's time */
   private var time = 0d
@@ -37,6 +37,13 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
     }
   }
 
+  final def stop() {
+    synchronized {
+      stopModelling()
+      statFlush()
+    }
+  }
+
   /**
    * Changes the time and the state of a model
    * @param delta_t delta time
@@ -46,8 +53,8 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
    * } }}}
    */
   def changeStateAndTime(delta_t: Double)(f: T => Unit) {
-    snapshot()
     synchronized {
+      snapshot()
       time += delta_t
       f(state)
     }

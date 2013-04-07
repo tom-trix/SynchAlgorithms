@@ -4,17 +4,18 @@ import java.util.concurrent.ConcurrentLinkedDeque
 import scala.Some
 import scala.collection.mutable.ListBuffer
 import ru.tomtrix.synch._
-import ru.tomtrix.synch.ApacheLogger._
 import ru.tomtrix.synch.SafeCode._
+import ru.tomtrix.synch.Serializer._
+import ru.tomtrix.synch.ApacheLogger._
 
 /** Algorithm of classic optimistic synchronization */
-trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
+trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable { self: IModel[T] =>
 
   def onMessageReceived()
 
   /** stack to keep the previous states */
-  private val stateStack = new ConcurrentLinkedDeque[(Double, T)]()
-  private val msgStack = new ConcurrentLinkedDeque[(Double, Message, String)]()
+  private val stateStack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
+  private val msgStack = new ConcurrentLinkedDeque[(Message, String)]()
   private val inputQueue = new ListBuffer[Message]()
   private var gvtMap = (actornames map {_ -> 0d}).toMap
 
@@ -22,7 +23,7 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
    * <b>It's unlikely to be used in user's code</b> */
   final def snapshot() {
     synchronized {
-      stateStack push getTime -> getState
+      stateStack push getTime -> serialize(getState)
       if (stateStack.size > 10000) {
         stateStack pollLast()
         logger error "stack overflown"
@@ -39,8 +40,9 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
   final def backupMessage(whom: String, m: Message) {
     synchronized {
       log"Послано сообщение $m"
+      statMessageSent(m)
       if (m.isInstanceOf[EventMessage]) {
-        msgStack push (getTime, m, whom)
+        msgStack push (m, whom)
         if (msgStack.size > 10000) {
           msgStack pollLast()
           logger error "stack overflown"
@@ -51,6 +53,7 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
 
   private def calculateGVTAndFreeMemory() = {
     val gvt = (gvtMap map { _._2 }).min
+    log"gvt = $gvt"
     var q = stateStack peekLast()
     while (q != null)
       q = if (q._1 < gvt) {
@@ -60,7 +63,7 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
       else null
     var w = msgStack peekLast()
     while (w != null)
-      w = if (w._1 < gvt) {
+      w = if (w._1.t < gvt) {
         msgStack pollLast()
         msgStack peekLast()
       }
@@ -70,40 +73,45 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
 
   /**
    * Performs rollback to a prevoius consistent state
-   * @param causedBy actor that sent the message
-   * @param t timestamp that corresponds to a prevoius consistent state
+   * @param m message that caused a rollback
    */
-  private def rollback(causedBy: String, t: Double) {
-    synchronized {
-      log"ROLLBACK to $t"
-      // pop all the states from the stack until find one with time ≤ t
-      var q = stateStack poll()
-      while (q != null)
-        q = if (q._1 <= t) {
-          setStateAndTime(q._1, q._2)
-          null
-        }
-        else stateStack poll()
+  private def rollback(m: Message) {
+    safe {
+      synchronized {
+        log"ROLLBACK to ${m.t}"
+        // pop all the states from the stack until find one with time ≤ t
+        var depth = 1
+        var q = stateStack poll()
+        while (q != null)
+          q = if (q._1 <= m.t) {
+            statRolledback(depth, getTime-q._1)
+            setStateAndTime(q._1, deserialize(q._2))
+            null
+          }
+          else {depth+=1; stateStack poll()}
 
-      // send anti-messages
-      var w = msgStack peek() //обязательно peek! Не факт, что элемент нужно будет удалить
-      while (w != null)
-        w = if (w._1 > t) {
-          sendMessage(w._3, new AntiMessage(w._2))
-          msgStack pop()
-          msgStack peek()
-        }
-        else null
+        // send anti-messages
+        var w = msgStack peek() //обязательно peek! Не факт, что элемент нужно будет удалить
+        while (w != null)
+          w = if (w._1.t > m.t) {
+            sendMessage(w._2, new AntiMessage(w._1))
+            msgStack pop()
+            msgStack peek()
+          }
+          else null
 
-      // finally calculate GVT & remove useless state/messages to free memory
-      gvtMap += causedBy -> t
-      val gvt = calculateGVTAndFreeMemory()
+        // finally calculate GVT & remove useless state/messages to free memory
+        log"causedBy = ${m.sender}; map = $gvtMap"
+        if (m.isInstanceOf[EventMessage])  //IMPORTANT!!!
+          gvtMap += m.sender -> getTime
+        val gvt = calculateGVTAndFreeMemory()
 
-      //assert that everything is OK
-      assert(getTime <= t)
-      assert(msgStack.isEmpty || msgStack.peek()._1 <= t)
-      assert(msgStack.isEmpty || msgStack.peekLast()._1 >= gvt)
-      assert(stateStack.isEmpty || stateStack.peekLast()._1 >= gvt)
+        //assert that everything is OK
+        assert(getTime <= m.t, s"getTime = $getTime, t = ${m.t}")
+        assert(msgStack.isEmpty || msgStack.peek()._1.t <= m.t)
+        assert(msgStack.isEmpty || msgStack.peekLast()._1.t >= gvt)
+        assert(stateStack.isEmpty || stateStack.peekLast()._1 >= gvt)
+      }
     }
   }
 
@@ -117,9 +125,13 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
       synchronized {
         assert(m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
         log"Принято сообщение $m"
-        if (m.t < getTime) rollback(m.sender, m.t)
+        statMessageReceived(m)
+        if (m.t < getTime) rollback(m)
         // если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
         else inputQueue find {_ == m} map {t => inputQueue -= m} getOrElse {inputQueue += m; onMessageReceived()}
+        log"Statestack = $stateStack"
+        log"Msgstack = $msgStack"
+        log"InputQueue = $inputQueue"
       }
     }
   }
