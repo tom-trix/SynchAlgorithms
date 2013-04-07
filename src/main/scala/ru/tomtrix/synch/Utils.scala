@@ -56,7 +56,7 @@ object SafeCode extends Loggable {
       Some(func)
     }
     catch {
-      case e: Exception => logger error("SafeCode error", e)
+      case e: Throwable => logger error("SafeCode error", e)
       None
     }
     finally {
