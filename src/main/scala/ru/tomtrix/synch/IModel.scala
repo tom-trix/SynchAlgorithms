@@ -13,6 +13,16 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
   def startModelling: T
   def stopModelling()
 
+  def onReceive() = {
+    case m: EventMessage => handleMessage(m)
+    case m: AntiMessage => handleMessage(m)
+    case m: InfoMessage => logger warn m.text
+    case m: TimeRequest => sendMessage(m.sender, TimeResponse(time, actorname))
+    case StartMessage => setStateAndTime(0, startModelling)
+    case StopMessage => stop()
+    case _ => logger error "Unknown message"
+  }
+
   /** model's time */
   private var time = 0d
 

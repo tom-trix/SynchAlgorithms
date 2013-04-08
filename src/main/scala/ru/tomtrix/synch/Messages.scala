@@ -40,6 +40,13 @@ case class InfoMessage(sender: String, text: String) extends Message {
   val t = -1d
 }
 
+case class TimeRequest(sender: String) extends Message{
+  val t = -1d
+}
+
+case class TimeResponse(t: Double, sender: String) extends Message
+
+
 /**
  * Main message that brings the model event
  * @param t timestamp

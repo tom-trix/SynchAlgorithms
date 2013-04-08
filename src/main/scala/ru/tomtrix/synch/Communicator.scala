@@ -9,15 +9,10 @@ trait Communicator[T <: Serializable] { self: IModel[T] =>
 
   /** Actor to receive the messages (use <b>Props(new Receiver)</b>) */
   class Receiver extends Actor {
-    def receive = {
-      case m: EventMessage => handleMessage(m)
-      case m: AntiMessage => handleMessage(m)
-      case m: InfoMessage => logger warn m.text
-      case StartMessage => setStateAndTime(0, startModelling)
-      case StopMessage => stop()
-      case _ => logger error "Unknown message"
-    }
+    def receive = onReceive()
   }
+
+  def onReceive(): PartialFunction[Any, Unit]
 
   private val conf = ConfigFactory load()
 
