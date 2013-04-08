@@ -1,10 +1,9 @@
 package ru.tomtrix.synch
 
-import scala.util.Random
-import scala.compat.Platform
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
-import akka.actor.Cancellable
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import scala.collection.mutable
 
 /**
  * Created with IntelliJ IDEA.
@@ -12,18 +11,50 @@ import akka.actor.Cancellable
  * Date: 08.04.13
  * Time: 19:28
  */
-trait TestGenerator extends IModel[None.type ] {
-  override def onReceive() = {
-    case m: TimeResponse => checkTime()
-    case _ => super.onReceive()
-  }
+object TestGenerator extends App with IModel[None.type] {
 
-  def checkTime() {
+  var nodes = ListBuffer[String]()
 
-  }
+  var totalStatistics = mutable.HashMap[String, ArrayBuffer[Map[Category, Int]]]()
 
-  sendMessageToAll(StartMessage)
+  def startModelling = None
+
+  def onMessageReceived() {}
+
+  workers foreach {t => new ProcessBuilder("java", "-jar", t).start()}
+  Thread sleep 1000
   system.scheduler.schedule(0 minutes, 500 milliseconds) {
-    sendMessageToAll(TimeRequest(actorname))
+    synchronized {
+      nodes foreach {sendMessage(_, TimeRequest(actorname))}
+    }
+  }
+  tryToRestart()
+
+  override def onReceive() = {
+    case m: TimeResponse => checkTime(m)
+    case m: StatResponse => addToStatistics(m)
+    case _ =>
+  }
+
+  def checkTime(m: TimeResponse) {
+    if (m.t > 1440)
+      sendMessage(m.sender, StopMessage(actorname))
+  }
+
+  def addToStatistics(m: StatResponse) {
+    synchronized {
+      totalStatistics(m.sender) += m.statistics
+      nodes -= m.sender
+      tryToRestart()
+    }
+  }
+
+  def tryToRestart() {
+    synchronized {
+      if (nodes.isEmpty) {
+        nodes ++= actornames
+        sendMessageToAll(StartMessage)
+      }
+    }
   }
 }

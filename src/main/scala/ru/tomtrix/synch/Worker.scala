@@ -8,12 +8,12 @@ import akka.actor.Cancellable
 
 case class W(var i: Long)
 
-object Tester extends App with IModel[W] {
+object Worker extends App with IModel[W] {
   val rand = new Random(Platform.currentTime)
   var scheduler: Cancellable = _
 
   def startModelling = {
-    scheduler = system.scheduler.schedule(0 seconds, 300 milliseconds) {
+    scheduler = system.scheduler.schedule(0 seconds, 30 milliseconds) {
       synchronized {
         logger debug s"time = $getTime, state = ${getState.i}"
         changeStateAndTime(1 + rand.nextInt(10)){ t =>
@@ -27,10 +27,6 @@ object Tester extends App with IModel[W] {
     new W(0)
   }
 
-  def stopModelling() {
-    scheduler.cancel()
-  }
-
   def onMessageReceived() {
     popMessage
     synchronized {
@@ -40,5 +36,10 @@ object Tester extends App with IModel[W] {
       }
       logger debug s"time = $getTime, state = ${getState.i}"
     }
+  }
+
+  override def stopModelling() = {
+    scheduler cancel()
+    super.stopModelling()
   }
 }

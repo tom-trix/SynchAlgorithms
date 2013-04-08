@@ -7,7 +7,7 @@
     <inceptionYear>2013</inceptionYear>
     <properties>
         <scala.version>2.10.1</scala.version>
-        <entrypoint>Tester</entrypoint>
+        <entrypoint>TestGenerator</entrypoint>
     </properties>
 
     <repositories>

@@ -2,7 +2,7 @@ package ru.tomtrix.synch
 
 import akka.actor._
 import com.typesafe.config.ConfigFactory
-import ru.tomtrix.synch.ApacheLogger._
+import SafeCode._
 
 /** Agent that is responsible for sending and receiving the messages */
 trait Communicator[T <: Serializable] { self: IModel[T] =>
@@ -29,6 +29,10 @@ trait Communicator[T <: Serializable] { self: IModel[T] =>
   val actors = (actorsAddr zip actorsAddr.map{t => system actorFor s"akka://$systemname@$t"}).toMap
 
   val actornames = actorsAddr map {_.split("/")(2)}
+
+  val workers = safe {
+    conf.getStringList("workers.jars").toArray(Array("")).toList
+  } getOrElse Nil
 
   logger info s"Actor $actor ($actorname) loaded"
 }

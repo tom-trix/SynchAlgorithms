@@ -26,9 +26,8 @@ object StartMessage extends Message {
   val sender = "Starter"
 }
 
-object StopMessage extends Message {
+case class StopMessage(sender: String) extends Message {
   val t = -1d
-  val sender = "Starter"
 }
 
 /**
@@ -40,12 +39,13 @@ case class InfoMessage(sender: String, text: String) extends Message {
   val t = -1d
 }
 
-case class TimeRequest(sender: String) extends Message{
+case class TimeRequest(sender: String) extends Message {
   val t = -1d
 }
 
 case class TimeResponse(t: Double, sender: String) extends Message
 
+case class StatResponse(t: Double, sender: String, statistics: Map[Category, Int])
 
 /**
  * Main message that brings the model event

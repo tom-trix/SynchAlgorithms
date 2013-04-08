@@ -3,7 +3,13 @@ package ru.tomtrix.synch
 import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
 
 /** Abstract trait that your model should implement */
-trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchronizator[T] {
+trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
+
+  /** model's time */
+  private var time: Double = _
+
+  /** model's state */
+  private var state: T = _
 
   /**
    * The basic method you must implement. It'll be invoked as soon as the Starter sends a message to get started.
@@ -11,23 +17,21 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
    * @return not-null instance of Serializable you want to consider as your model's state
    */
   def startModelling: T
-  def stopModelling()
+
+  override def stopModelling() = {
+    resetBuffers()
+    super.stopModelling()
+  }
 
   def onReceive() = {
     case m: EventMessage => handleMessage(m)
     case m: AntiMessage => handleMessage(m)
     case m: InfoMessage => logger warn m.text
     case m: TimeRequest => sendMessage(m.sender, TimeResponse(time, actorname))
+    case m: StopMessage => sendMessage(m.sender, StatResponse(time, actorname, stopModelling()))
     case StartMessage => setStateAndTime(0, startModelling)
-    case StopMessage => stop()
     case _ => logger error "Unknown message"
   }
-
-  /** model's time */
-  private var time = 0d
-
-  /** model's state */
-  private var state: T = _
 
   /** @return model's time */
   def getTime = time
@@ -44,13 +48,6 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
     synchronized {
       time = t
       state = s
-    }
-  }
-
-  final def stop() {
-    synchronized {
-      stopModelling()
-      statFlush()
     }
   }
 
@@ -76,7 +73,8 @@ trait IModel[T <: Serializable] extends Communicator[T] with OptimisticSynchroni
    * @param m message to send
    */
   def sendMessage(whom: String, m: Message) {
-    backupMessage(whom, m)
+    if (m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
+      backupMessage(whom, m)
     actors.get(whom) map {_ ! m} getOrElse logger.error(s"No such an actor: $whom")
   }
 

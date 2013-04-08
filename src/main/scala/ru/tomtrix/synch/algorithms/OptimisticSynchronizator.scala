@@ -9,9 +9,7 @@ import ru.tomtrix.synch.Serializer._
 import ru.tomtrix.synch.ApacheLogger._
 
 /** Algorithm of classic optimistic synchronization */
-trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable { self: IModel[T] =>
-
-  def onMessageReceived()
+trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
 
   /** stack to keep the previous states */
   private val stateStack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
@@ -19,37 +17,7 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable { self
   private val inputQueue = new ListBuffer[Message]()
   private var gvtMap = (actornames map {_ -> 0d}).toMap
 
-  /** Saves the state to a stack (to make it possible to rollback)<br>
-   * <b>It's unlikely to be used in user's code</b> */
-  final def snapshot() {
-    synchronized {
-      stateStack push getTime -> serialize(getState)
-      if (stateStack.size > 10000) {
-        stateStack pollLast()
-        logger error "stack overflown"
-      }
-    }
-  }
-
-  /**
-   * Saves the message into a special buffer to make it possible to send antimessages afterwards<br>
-   * <b>It's unlikely to be used in user's code</b>
-   * @param whom receiver actor's name
-   * @param m message
-   */
-  final def backupMessage(whom: String, m: Message) {
-    synchronized {
-      log"Послано сообщение $m"
-      statMessageSent(m)
-      if (m.isInstanceOf[EventMessage]) {
-        msgStack push (m, whom)
-        if (msgStack.size > 10000) {
-          msgStack pollLast()
-          logger error "stack overflown"
-        }
-      }
-    }
-  }
+  def onMessageReceived()
 
   private def calculateGVTAndFreeMemory() = {
     val gvt = (gvtMap map { _._2 }).min
@@ -115,6 +83,14 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable { self
     }
   }
 
+  def resetBuffers() {
+    synchronized {
+      stateStack clear()
+      msgStack clear()
+      inputQueue clear()
+    }
+  }
+
   /**
    * Handles received messages
    * <b>It's unlikely to be used in user's code</b>
@@ -132,6 +108,36 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable { self
         log"Statestack = $stateStack"
         log"Msgstack = $msgStack"
         log"InputQueue = $inputQueue"
+      }
+    }
+  }
+
+  /** Saves the state to a stack (to make it possible to rollback)<br>
+    * <b>It's unlikely to be used in user's code</b> */
+  final def snapshot() {
+    synchronized {
+      stateStack push getTime -> serialize(getState)
+      if (stateStack.size > 10000) {
+        stateStack pollLast()
+        logger error "stack overflown"
+      }
+    }
+  }
+
+  /**
+   * Saves the message into a special buffer to make it possible to send antimessages afterwards<br>
+   * <b>It's unlikely to be used in user's code</b>
+   * @param whom receiver actor's name
+   * @param m message
+   */
+  final def backupMessage(whom: String, m: Message) {
+    synchronized {
+      log"Послано сообщение $m"
+      statMessageSent(m)
+      msgStack push (m, whom)
+      if (msgStack.size > 10000) {
+        msgStack pollLast()
+        logger error "stack overflown"
       }
     }
   }

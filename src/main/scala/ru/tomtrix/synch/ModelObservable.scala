@@ -26,7 +26,7 @@ object MAX_TIME_WINDOW extends Category
 /**
  * gr
  */
-trait ModelObservable extends Loggable {
+trait ModelObservable {
   private val statistics = mutable.HashMap(
     EVENTS_HANDLED -> 0,
     RECEIVED_MESSAGES -> 0,
@@ -43,6 +43,17 @@ trait ModelObservable extends Loggable {
     ROLLBACKS_DEPTH_MORE -> 0,
     MAX_TIME_WINDOW -> 0
   )
+
+  def stopModelling(): Map[Category, Int] = {
+    synchronized {
+      val result = statistics.toMap
+      statistics.toList sortBy {_._1.toString} foreach {t =>
+        Logger getLogger "statistics" info f"${t._1}%25s:   ${t._2}%4d"
+        statistics(t._1) = 0
+      }
+      result
+    }
+  }
 
   def statMessageSent(m: Message) {
     synchronized {
@@ -78,15 +89,6 @@ trait ModelObservable extends Loggable {
       }
       statistics(ROLLBACKS_MAXDEPTH) = max(statistics(ROLLBACKS_MAXDEPTH), depth)
       statistics(MAX_TIME_WINDOW) = max(statistics(MAX_TIME_WINDOW), round(timeWindow).toInt)
-    }
-  }
-
-  def statFlush() {
-    synchronized {
-      statistics.toList sortBy {_._1.toString} foreach {t =>
-        Logger getLogger "statistics" info f"${t._1}%25s:   ${t._2}%4d"
-        statistics(t._1) = 0
-      }
     }
   }
 }
