@@ -4,7 +4,7 @@ import scala.math._
 import scala.collection.mutable
 import org.apache.log4j.Logger
 
-abstract sealed class Category {
+abstract sealed class Category extends Serializable {
   override def toString = getClass.getSimpleName.substring(0, getClass.getSimpleName.length-1)
 }
 

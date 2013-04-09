@@ -4,6 +4,8 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.collection.mutable
+import ru.tomtrix.synch.ApacheLogger._
+import ru.tomtrix.synch.SafeCode._
 
 /**
  * Created with IntelliJ IDEA.
@@ -13,47 +15,61 @@ import scala.collection.mutable
  */
 object TestGenerator extends App with IModel[None.type] {
 
-  var nodes = ListBuffer[String]()
+  private var nodes = ListBuffer[String]()
 
-  var totalStatistics = mutable.HashMap[String, ArrayBuffer[Map[Category, Int]]]()
+  private val totalStatistics = mutable.HashMap[String, ArrayBuffer[Map[Category, Int]]]()
 
   def startModelling = None
 
   def onMessageReceived() {}
 
-  workers foreach {t => new ProcessBuilder("java", "-jar", t).start()}
-  Thread sleep 1000
-  system.scheduler.schedule(0 minutes, 500 milliseconds) {
-    synchronized {
-      nodes foreach {sendMessage(_, TimeRequest(actorname))}
+  safe {
+    actornames foreach {totalStatistics += _ -> ArrayBuffer()}
+    system.scheduler.schedule(500 milliseconds, 1 second) {
+      synchronized {
+        nodes foreach {sendMessage(_, TimeRequest)}
+      }
     }
+    tryToRestart()
   }
-  tryToRestart()
 
   override def onReceive() = {
     case m: TimeResponse => checkTime(m)
     case m: StatResponse => addToStatistics(m)
-    case _ =>
+    case _ => logger error "Unknown message"
   }
 
   def checkTime(m: TimeResponse) {
-    if (m.t > 1440)
-      sendMessage(m.sender, StopMessage(actorname))
+    safe {
+      synchronized {
+        log"t = ${m.t}"
+        if (m.t > 1440 && nodes.contains(m.sender)) {
+          nodes -= m.sender
+          sendMessage(m.sender, StopMessage)
+        }
+      }
+    }
   }
 
   def addToStatistics(m: StatResponse) {
-    synchronized {
-      totalStatistics(m.sender) += m.statistics
-      nodes -= m.sender
-      tryToRestart()
+    safe {
+      synchronized {
+        log"statistics = ${m.statistics}"
+        totalStatistics(m.sender) += m.statistics
+        log"total statistics = $totalStatistics"
+        tryToRestart()
+      }
     }
   }
 
   def tryToRestart() {
-    synchronized {
-      if (nodes.isEmpty) {
-        nodes ++= actornames
-        sendMessageToAll(StartMessage)
+    safe {
+      synchronized {
+        log"trying to restart..."
+        if (nodes.isEmpty) {
+          nodes ++= actornames
+          sendMessageToAll(StartMessage)
+        }
       }
     }
   }

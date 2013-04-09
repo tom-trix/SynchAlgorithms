@@ -51,16 +51,18 @@ object Serializer {
 }
 
 object SafeCode extends Loggable {
-  def safe[T](func: => T, finallyFunc: => Unit = {}): Option[T] = {
+  def safe[T](func: => T, finallyFunc: => Unit = {}, log: Boolean = true): Option[T] = {
     try {
       Some(func)
     }
     catch {
-      case e: Throwable => logger error("SafeCode error", e)
+      case e: Throwable => if (log) logger error("SafeCode error", e)
       None
     }
     finally {
       finallyFunc
     }
   }
+
+  def safe$[T](func: => T, finallyFunc: => Unit = {}): Option[T] = safe(func, finallyFunc, log = false)
 }

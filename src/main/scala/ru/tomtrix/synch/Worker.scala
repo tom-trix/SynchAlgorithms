@@ -5,6 +5,7 @@ import scala.compat.Platform
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import akka.actor.Cancellable
+import ru.tomtrix.synch.MessageImplicits.EVENT_MESSAGE
 
 case class W(var i: Long)
 
@@ -22,7 +23,7 @@ object Worker extends App with IModel[W] {
         logger debug s"time = $getTime, state = ${getState.i}"
       }
       if (rand nextBoolean())
-        sendMessageToAll(Some("trix"))
+        sendMessageToAll(EVENT_MESSAGE(Some(0)))
     }
     new W(0)
   }

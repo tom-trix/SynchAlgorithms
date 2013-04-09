@@ -19,6 +19,23 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
 
   def onMessageReceived()
 
+  /**
+   * Sends message <b>m</b> to <b>whom</b>
+   * @param whom receiver (actor name)
+   * @param m message to send
+   */
+  def sendMessage(whom: String, m: Message) {
+    synchronized {
+      if (m.isInstanceOf[EventMessage]) {
+        msgStack push (m, whom)
+        if (msgStack.size > 10000) {
+          msgStack pollLast()
+          logger error "stack overflown"
+        }
+      }
+    }
+  }
+
   private def calculateGVTAndFreeMemory() = {
     val gvt = (gvtMap map { _._2 }).min
     log"gvt = $gvt"
@@ -119,24 +136,6 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
       stateStack push getTime -> serialize(getState)
       if (stateStack.size > 10000) {
         stateStack pollLast()
-        logger error "stack overflown"
-      }
-    }
-  }
-
-  /**
-   * Saves the message into a special buffer to make it possible to send antimessages afterwards<br>
-   * <b>It's unlikely to be used in user's code</b>
-   * @param whom receiver actor's name
-   * @param m message
-   */
-  final def backupMessage(whom: String, m: Message) {
-    synchronized {
-      log"Послано сообщение $m"
-      statMessageSent(m)
-      msgStack push (m, whom)
-      if (msgStack.size > 10000) {
-        msgStack pollLast()
         logger error "stack overflown"
       }
     }

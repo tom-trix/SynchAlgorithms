@@ -1,6 +1,9 @@
 package ru.tomtrix.synch
 
 import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
+import ru.tomtrix.synch.ApacheLogger._
+import ru.tomtrix.synch.MessageImplicits._
+import ru.tomtrix.synch.SafeCode._
 
 /** Abstract trait that your model should implement */
 trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
@@ -26,11 +29,21 @@ trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable wit
   def onReceive() = {
     case m: EventMessage => handleMessage(m)
     case m: AntiMessage => handleMessage(m)
-    case m: InfoMessage => logger warn m.text
-    case m: TimeRequest => sendMessage(m.sender, TimeResponse(time, actorname))
-    case m: StopMessage => sendMessage(m.sender, StatResponse(time, actorname, stopModelling()))
+    case m: InfoMessage => logger info m.text
+    case TimeRequest => sendMessageToStarter(TIME_RESPONSE)
+    case StopMessage => sendMessageToStarter(STAT_RESPONSE(stopModelling()))
     case StartMessage => setStateAndTime(0, startModelling)
     case _ => logger error "Unknown message"
+  }
+
+  override def sendMessage(whom: String, m: Message) {
+    safe {
+      super.sendMessage(whom, m)
+      if (m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
+        statMessageSent(m)
+      actors.get(whom) map {_ ! m} getOrElse logger.error(s"No such an actor: $whom")
+      log"Послано сообщение $m"
+    }
   }
 
   /** @return model's time */
@@ -67,59 +80,18 @@ trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable wit
     }
   }
 
-  /**
-   * Sends message <b>m</b> to <b>whom</b>
-   * @param whom receiver (actor name)
-   * @param m message to send
-   */
-  def sendMessage(whom: String, m: Message) {
-    if (m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
-      backupMessage(whom, m)
-    actors.get(whom) map {_ ! m} getOrElse logger.error(s"No such an actor: $whom")
-  }
-
-  /**
-   * Sends InfoMessage to <b>whom</b>
-   * @param whom receiver (actor name)
-   * @param text message body
-   */
-  def sendMessage(whom: String, text: String) {
-    sendMessage(whom, InfoMessage(actorname, text))
-  }
-
-  /**
-   * Sends EventMessage to <b>whom</b>
-   * @param whom receiver (actor name)
-   * @param data message body
-   */
-  def sendMessage(whom: String, data: Serializable) {
-    sendMessage(whom, EventMessage(time, actorname, data))
-  }
-
-  /**
-   * Sends message <b>m</b> to all the actors listed in the conf-file
-   * @param m message to send
-   */
-  def sendMessageToAll(m: Message) {
-    actors foreach { t =>
-      backupMessage(t._1, m)
-      t._2 ! m
+  def sendMessageToStarter(m: Message) {
+    safe {
+      starter foreach { _ ! m}
     }
   }
 
-  /**
-   * Sends InfoMessage to all the actors listed in the conf-file
-   * @param text message body
-   */
-  def sendMessageToAll(text: String) {
-    sendMessageToAll(InfoMessage(actorname, text))
+  def sendMessageToAll(m: Message) {
+    actornames foreach {sendMessage(_, m)}
   }
 
-  /**
-   * Sends EventMessage to all the actors listed in the conf-file
-   * @param data message body
-   */
-  def sendMessageToAll(data: Serializable) {
-    sendMessageToAll(EventMessage(time, actorname, data))
-  }
+  implicit def toMessage(x: TIME_RESPONSE.type): TimeResponse = TimeResponse(getTime, actorname)
+  implicit def toMessage(x: INFO_MESSAGE): InfoMessage = InfoMessage(actorname, x.text)
+  implicit def toMessage(x: STAT_RESPONSE): StatResponse = StatResponse(getTime, actorname, x.stat)
+  implicit def toMessage(x: EVENT_MESSAGE): EventMessage = EventMessage(getTime, actorname, x.data)
 }

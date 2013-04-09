@@ -10,6 +10,6 @@ object Starter extends App with IModel[None.type] {
     sendMessageToAll(StartMessage)
     println("Press Enter to stop...")
     readLine()
-    sendMessageToAll(StopMessage(actorname))
+    sendMessageToAll(StopMessage)
   }
 }

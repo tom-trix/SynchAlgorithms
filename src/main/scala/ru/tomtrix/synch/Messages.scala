@@ -26,8 +26,14 @@ object StartMessage extends Message {
   val sender = "Starter"
 }
 
-case class StopMessage(sender: String) extends Message {
+object TimeRequest extends Message {
   val t = -1d
+  val sender = "Starter"
+}
+
+object StopMessage extends Message {
+  val t = -1d
+  val sender = "Starter"
 }
 
 /**
@@ -39,13 +45,9 @@ case class InfoMessage(sender: String, text: String) extends Message {
   val t = -1d
 }
 
-case class TimeRequest(sender: String) extends Message {
-  val t = -1d
-}
-
 case class TimeResponse(t: Double, sender: String) extends Message
 
-case class StatResponse(t: Double, sender: String, statistics: Map[Category, Int])
+case class StatResponse(t: Double, sender: String, statistics: Map[Category, Int]) extends Message
 
 /**
  * Main message that brings the model event
@@ -59,4 +61,15 @@ class AntiMessage(baseMsg: Message) extends Message {
   val t = baseMsg.t
   val sender = baseMsg.sender
   override val id = baseMsg.id
+
+  override def toString = {
+    s"AntiMessage (t = $t)"
+  }
+}
+
+object MessageImplicits {
+  object TIME_RESPONSE
+  case class INFO_MESSAGE(text: String)
+  case class STAT_RESPONSE(stat: Map[Category, Int])
+  case class EVENT_MESSAGE(data: Serializable)
 }
