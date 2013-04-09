@@ -1,6 +1,7 @@
 package ru.tomtrix.synch
 
 import java.util.UUID
+import ModelObservable._
 
 /** Base Message class to communicate among the actors */
 sealed abstract class Message extends Serializable {
@@ -47,7 +48,7 @@ case class InfoMessage(sender: String, text: String) extends Message {
 
 case class TimeResponse(t: Double, sender: String) extends Message
 
-case class StatResponse(t: Double, sender: String, statistics: Map[Category, Int]) extends Message
+case class StatResponse(t: Double, sender: String, statistics: Statistics) extends Message
 
 /**
  * Main message that brings the model event
@@ -70,6 +71,6 @@ class AntiMessage(baseMsg: Message) extends Message {
 object MessageImplicits {
   object TIME_RESPONSE
   case class INFO_MESSAGE(text: String)
-  case class STAT_RESPONSE(stat: Map[Category, Int])
+  case class STAT_RESPONSE(stat: Statistics)
   case class EVENT_MESSAGE(data: Serializable)
 }

@@ -1,11 +1,15 @@
 package ru.tomtrix.synch
 
+import scala.compat.Platform
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
-import scala.collection.mutable
-import ru.tomtrix.synch.ApacheLogger._
+import org.apache.log4j.Logger
 import ru.tomtrix.synch.SafeCode._
+import ru.tomtrix.synch.ApacheLogger._
+import ru.tomtrix.synch.ModelObservable._
+
+case class Results(node: String, statistics: Statistics, time: Long)
 
 /**
  * Created with IntelliJ IDEA.
@@ -17,14 +21,38 @@ object TestGenerator extends App with IModel[None.type] {
 
   private var nodes = ListBuffer[String]()
 
-  private val totalStatistics = mutable.HashMap[String, ArrayBuffer[Map[Category, Int]]]()
+  private var i = 0
+
+  private val totalStatistics = ArrayBuffer[Results]()
+
+  private var time = -1L
+
+  private val n = safe$ {args(0).toInt} getOrElse 100
 
   def startModelling = None
+
+  override def stopModelling() = {
+    synchronized {
+      system shutdown()
+      var result: Statistics = Map.empty
+      if (i > 0) {
+        val logger = Logger getLogger "statistics"
+        logger info s"Total tests: $i"
+        logger info "======================="
+        logger info s"Average time = ${totalStatistics.map{_.time}.sum / i}"
+        // считаем сумму всех показателей
+        result = totalStatistics map {_.statistics} reduce((x, y) => x zip y map {t => t._1._1 -> (t._1._2+t._2._2)})
+        // делим суммы на число тестов
+        result = result map {t => t._1 -> t._2/i}
+        printStatistics(result)
+      }
+      result
+    }
+  }
 
   def onMessageReceived() {}
 
   safe {
-    actornames foreach {totalStatistics += _ -> ArrayBuffer()}
     system.scheduler.schedule(500 milliseconds, 1 second) {
       synchronized {
         nodes foreach {sendMessage(_, TimeRequest)}
@@ -43,7 +71,7 @@ object TestGenerator extends App with IModel[None.type] {
     safe {
       synchronized {
         log"t = ${m.t}"
-        if (m.t > 1440 && nodes.contains(m.sender)) {
+        if (m.t > 440 && nodes.contains(m.sender)) {
           nodes -= m.sender
           sendMessage(m.sender, StopMessage)
         }
@@ -54,8 +82,7 @@ object TestGenerator extends App with IModel[None.type] {
   def addToStatistics(m: StatResponse) {
     safe {
       synchronized {
-        log"statistics = ${m.statistics}"
-        totalStatistics(m.sender) += m.statistics
+        totalStatistics += Results(m.sender, m.statistics, Platform.currentTime - time)
         log"total statistics = $totalStatistics"
         tryToRestart()
       }
@@ -66,10 +93,13 @@ object TestGenerator extends App with IModel[None.type] {
     safe {
       synchronized {
         log"trying to restart..."
-        if (nodes.isEmpty) {
-          nodes ++= actornames
-          sendMessageToAll(StartMessage)
-        }
+        if (nodes.isEmpty)
+          if (i < n) {
+            nodes ++= actornames
+            sendMessageToAll(StartMessage)
+            time = Platform.currentTime
+            i += 1
+          } else stopModelling()
       }
     }
   }
