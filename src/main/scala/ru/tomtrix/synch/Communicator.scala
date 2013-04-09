@@ -4,7 +4,9 @@ import akka.actor._
 import com.typesafe.config.ConfigFactory
 import ru.tomtrix.synch.SafeCode._
 
-/** Agent that is responsible for sending and receiving the messages */
+/**
+ * Agent that is responsible for sending and receiving the messages
+ */
 trait Communicator[T <: Serializable] { self: IModel[T] =>
 
   /** Actor to receive the messages (use <b>Props(new Receiver)</b>) */
@@ -24,11 +26,11 @@ trait Communicator[T <: Serializable] { self: IModel[T] =>
 
   val actor = system actorOf(Props(Receiver), actorname)
 
-  val actorsAddr = conf.getStringList("actors.others").toArray(Array("")).toList
+  val actorAddresses = conf.getStringList("actors.others").toArray(Array("")).toList
 
-  val actornames = actorsAddr map {_.split("/")(2)}
+  val actornames = actorAddresses map {_.split("/")(2)}
 
-  val actors = (actornames zip actorsAddr.map{t => system actorFor s"akka://$systemname@$t"}).toMap
+  val actors = (actornames zip actorAddresses.map{t => system actorFor s"akka://$systemname@$t"}).toMap
 
   val starter = safe$ {
     system actorFor s"akka://$systemname@${conf getString "actors.starter"}"

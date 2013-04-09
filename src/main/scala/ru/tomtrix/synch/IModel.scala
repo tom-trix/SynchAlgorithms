@@ -1,11 +1,13 @@
 package ru.tomtrix.synch
 
-import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
+import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.ApacheLogger._
 import ru.tomtrix.synch.MessageImplicits._
-import ru.tomtrix.synch.SafeCode._
+import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
 
-/** Abstract trait that your model should implement */
+/**
+ * Abstract trait that your model should implement
+ */
 trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
 
   /** model's time */
@@ -47,13 +49,14 @@ trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable wit
   }
 
   /** @return model's time */
-  def getTime = time
+  final def getTime = time
 
   /** @return model's state */
-  def getState = state
+  final def getState = state
 
   /**
-   * Sets the time and the state<br><b>DON'T USE IT IN USER'S CODE!!!</b> Use {@link ru.tomtrix.synch.IModel#changeStateAndTime changeStateAndTime} instead
+   * Sets the time and the state<br>
+   * <b>DON'T USE IT IN USER'S CODE!!!</b> Use {@link ru.tomtrix.synch.IModel#changeStateAndTime changeStateAndTime} instead
    * @param t time
    * @param s state
    */
@@ -72,20 +75,30 @@ trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable wit
    *   st => st.ball += 1
    * } }}}
    */
-  def changeStateAndTime(delta_t: Double)(f: T => Unit) {
-    synchronized {
-      snapshot()
-      time += delta_t
-      f(state)
+  final def changeStateAndTime(delta_t: Double)(f: T => Unit) {
+    safe {
+      synchronized {
+        snapshot()
+        time += delta_t
+        f(state)
+      }
     }
   }
 
+  /**
+   * Sends the message to a Starter actor described in <b>cators.starter</b> section of a config file
+   * @param m message to send
+   */
   def sendMessageToStarter(m: Message) {
     safe {
       starter foreach { _ ! m}
     }
   }
 
+  /**
+   * Sends the message to all of the actors described in <b>cators.others</b> section of a config file
+   * @param m message to send
+   */
   def sendMessageToAll(m: Message) {
     actornames foreach {sendMessage(_, m)}
   }

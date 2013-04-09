@@ -8,15 +8,26 @@ import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.Serializer._
 import ru.tomtrix.synch.ApacheLogger._
 
-/** Algorithm of classic optimistic synchronization */
+/**
+ * Algorithm of classic optimistic synchronization
+ */
 trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
 
   /** stack to keep the previous states */
   private val stateStack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
+
+  /** stack to keep the sent messages*/
   private val msgStack = new ConcurrentLinkedDeque[(Message, String)]()
+
+  /** special queue to store the input messages */
   private val inputQueue = new ListBuffer[Message]()
+
+  /** map: actor -> GVT_estimate (so that GVT is a minimum of the estimates) */
   private var gvtMap = (actornames map {_ -> 0d}).toMap
 
+  /**
+   * Invoked as soon as a new EventMessage is received
+   */
   def onMessageReceived()
 
   /**
@@ -36,6 +47,10 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
     }
   }
 
+  /**
+   * Calculates GVT and frees memory by removing all the states/messages with a timestamp that less than GVT
+   * @return GVT
+   */
   private def calculateGVTAndFreeMemory() = {
     val gvt = (gvtMap map { _._2 }).min
     log"gvt = $gvt"
@@ -100,17 +115,9 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
     }
   }
 
-  def resetBuffers() {
-    synchronized {
-      stateStack clear()
-      msgStack clear()
-      inputQueue clear()
-    }
-  }
-
   /**
    * Handles received messages
-   * <b>It's unlikely to be used in user's code</b>
+   * <b>It's unlikely used in user's code</b>
    * @param m message
    */
   final def handleMessage(m: Message) {
@@ -142,7 +149,18 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
   }
 
   /**
-   * Peeks whether the input buffer has a message. It doesn't remove the message anyway
+   * Resets the algorithm by clearing all the buffers
+   */
+  final def resetBuffers() {
+    synchronized {
+      stateStack clear()
+      msgStack clear()
+      inputQueue clear()
+    }
+  }
+
+  /**
+   * Peeks whether the input buffer has a message. It doesn't remove the message
    * @return Option[message]
    */
   final def peekMessage = synchronized {
