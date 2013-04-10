@@ -7,7 +7,7 @@ import ru.tomtrix.synch.SafeCode._
 /**
  * Agent that is responsible for sending and receiving the messages
  */
-trait Communicator[T <: Serializable] { self: IModel[T] =>
+trait Communicator[T <: {def cloneObject: T}] { self: IModel[T] =>
 
   /** Actor to receive the messages (use <b>Props(new Receiver)</b>) */
   object Receiver extends Actor {

@@ -16,12 +16,15 @@ import ru.tomtrix.synch.ModelObservable._
  * @param time time taken by the launch
  */
 case class Results(statistics: Statistics, time: Long)
+case class Stub(n: Int) {
+  def cloneObject = copy()
+}
 
 /**
  * Test generator that is intended to be a Starter: it runs the modelling several times and aggregates
  * the obtained statistics by average measure. Args(0) may comprise the count of runs (otherwise count = 100)
  */
-object TestGenerator extends App with IModel[None.type] {
+object TestGenerator extends App with IModel[Stub] {
 
   /** Count of launches (1 or more) */
   private val n = safe$ {max(args(0).toInt, 1)} getOrElse 100
@@ -60,7 +63,7 @@ object TestGenerator extends App with IModel[None.type] {
     sendMessageToAll(StartMessage)
     time = Platform.currentTime
     i += 1
-    None
+    Stub(0)
   }
 
   override def onReceive() = {
@@ -108,8 +111,8 @@ object TestGenerator extends App with IModel[None.type] {
   def addToStatistics(m: StatResponse) {
     safe {
       synchronized {
+        log"statistics received ${m.statistics}"
         totalStatistics += Results(m.statistics, Platform.currentTime - time)
-        log"total statistics = $totalStatistics"
         barrier.runByLast {
           if (i < n) startModelling
           else stopModelling()

@@ -8,7 +8,7 @@ import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
 /**
  * Abstract trait that your model should implement
  */
-trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
+trait IModel[T <: {def cloneObject: T}] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
 
   /** model's time */
   private var time: Double = _
@@ -35,7 +35,7 @@ trait IModel[T <: Serializable] extends Communicator[T] with ModelObservable wit
     case TimeRequest => sendMessageToStarter(TIME_RESPONSE)
     case StopMessage => sendMessageToStarter(STAT_RESPONSE(stopModelling()))
     case StartMessage => setStateAndTime(0, startModelling)
-    case _ => logger error "Unknown message"
+    case _ => logger error s"Unknown message (state = ${state.cloneObject})"
   }
 
   override def sendMessage(whom: String, m: Message) {

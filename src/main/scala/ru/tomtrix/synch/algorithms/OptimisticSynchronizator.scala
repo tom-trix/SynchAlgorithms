@@ -5,16 +5,15 @@ import scala.Some
 import scala.collection.mutable.ListBuffer
 import ru.tomtrix.synch._
 import ru.tomtrix.synch.SafeCode._
-import ru.tomtrix.synch.Serializer._
 import ru.tomtrix.synch.ApacheLogger._
 
 /**
  * Algorithm of classic optimistic synchronization
  */
-trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
+trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: IModel[T] =>
 
   /** stack to keep the previous states */
-  private val stateStack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
+  private val stateStack = new ConcurrentLinkedDeque[(Double, T)]()
 
   /** stack to keep the sent messages*/
   private val msgStack = new ConcurrentLinkedDeque[(Message, String)]()
@@ -85,7 +84,7 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
         while (q != null)
           q = if (q._1 <= m.t) {
             statRolledback(depth, getTime-q._1)
-            setStateAndTime(q._1, deserialize(q._2))
+            setStateAndTime(q._1, q._2)
             null
           }
           else {depth+=1; stateStack poll()}
@@ -140,7 +139,7 @@ trait OptimisticSynchronizator[T <: Serializable] { self: IModel[T] =>
     * <b>It's unlikely to be used in user's code</b> */
   final def snapshot() {
     synchronized {
-      stateStack push getTime -> serialize(getState)
+      stateStack push getTime -> getState.cloneObject
       if (stateStack.size > 10000) {
         stateStack pollLast()
         logger error "stack overflown"

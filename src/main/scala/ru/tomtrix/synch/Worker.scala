@@ -7,7 +7,9 @@ import scala.concurrent.ExecutionContext.Implicits._
 import akka.actor.Cancellable
 import ru.tomtrix.synch.MessageImplicits.EVENT_MESSAGE
 
-case class W(var i: Long)
+case class W(var i: Long) {
+  def cloneObject = copy()
+}
 
 object Worker extends App with IModel[W] {
   val rand = new Random(Platform.currentTime)
