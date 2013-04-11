@@ -65,7 +65,8 @@ object Serializer {
  */
 object SafeCode extends Loggable {
   /**
-   * Wrappes the code so that all the exceptions/errors will be catched and logged
+   * Wrappes the code so that all the exceptions/errors will be catched and logged.<br>
+   * If you don't want errors to be logged please use {@link ru.tomtrix.synch.SafeCode#safe$ safe$} method
    * @param func your code
    * @param finallyFunc code that must be run in a finally clause
    * @param log shows whether the exception/error should be logged
@@ -86,7 +87,8 @@ object SafeCode extends Loggable {
   }
 
   /**
-   * Wrappes the code so that all the exceptions/errors will be catched but NOT logged
+   * Wrappes the code so that all the exceptions/errors will be catched but NOT logged.<br>
+   * If you want errors to be logged please use {@link ru.tomtrix.synch.SafeCode#safe safe} method
    * @param func your code
    * @param finallyFunc code that must be run in a finally clause
    * @tparam T type parameter

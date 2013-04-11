@@ -5,15 +5,18 @@ import com.typesafe.config.ConfigFactory
 import ru.tomtrix.synch.SafeCode._
 
 /**
- * Agent that is responsible for sending and receiving the messages
+ * Agent that is responsible for sending and receiving messages
  */
 trait Communicator[T <: {def cloneObject: T}] { self: IModel[T] =>
 
-  /** Actor to receive the messages (use <b>Props(new Receiver)</b>) */
+  /** Actor to receive messages */
   object Receiver extends Actor {
     def receive = onReceive()
   }
 
+  /**
+   * @return Partial function that handles the received messages
+   */
   def onReceive(): PartialFunction[Any, Unit]
 
   private val conf = ConfigFactory load()

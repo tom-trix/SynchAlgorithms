@@ -115,8 +115,8 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: IModel[T] =>
   }
 
   /**
-   * Handles received messages
-   * <b>It's unlikely used in user's code</b>
+   * Handles received messages.<br>
+   * <b>It unlikely might be used in user's code</b>
    * @param m message
    */
   final def handleMessage(m: Message) {
@@ -136,7 +136,8 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: IModel[T] =>
   }
 
   /** Saves the state to a stack (to make it possible to rollback)<br>
-    * <b>It's unlikely to be used in user's code</b> */
+    * <b>It unlikely might be used in user's code</b>
+    */
   final def snapshot() {
     synchronized {
       stateStack push getTime -> getState.cloneObject

@@ -5,34 +5,60 @@ import scala.collection.mutable
 import org.apache.log4j.Logger
 import ru.tomtrix.synch.ModelObservable._
 
+/**
+ * Companion for {@link ru.tomtrix.synch.ModelObservable ModelObservable} trait
+ */
 object ModelObservable {
+  /**
+   * Special alias for <b>Map[Category, Double]</b>
+   */
   type Statistics = Map[Category, Double]
 
+  /**
+   * Category is a single statistics parameter
+   */
   abstract sealed class Category extends Serializable {
     override def toString = getClass.getSimpleName.substring(0, getClass.getSimpleName.length-1)
   }
 
+  /** Total amount of events handled by a logic process */
   object EVENTS_HANDLED extends Category
+  /** Total amount of messages received by a logic process */
   object RECEIVED_MESSAGES extends Category
+  /** Amount of received event messages */
   object RECEIVED_EVENT_MESSAGES extends Category
+  /** Amount of received anti-messages */
   object RECEIVED_ANTI_MESSAGES extends Category
+  /** Total amount of messages sent by a logic process */
   object SENT_MESSAGES extends Category
+  /** Amount of sent event messages */
   object SENT_EVENT_MESSAGES extends Category
+  /** Amount of sent anti-messages */
   object SENT_ANTI_MESSAGES extends Category
+  /** Total amount of rollbacks that a logic process incurred */
   object ROLLBACKS extends Category
+  /** Max count of states rolled back during the modelling */
   object ROLLBACKS_MAXDEPTH extends Category
+  /** Amount of rollbacks that turned the single state back */
   object ROLLBACKS_DEPTH_1 extends Category
+  /** Amount of rollbacks that turned back 2 states */
   object ROLLBACKS_DEPTH_2 extends Category
+  /** Amount of rollbacks that turned back 3 states */
   object ROLLBACKS_DEPTH_3 extends Category
+  /** Amount of rollbacks that turned back 3 or more states */
   object ROLLBACKS_DEPTH_MORE extends Category
+  /** Max model time duration that was rolled back during the modelling */
   object MAX_TIME_WINDOW extends Category
 }
 
 
 /**
- * gr
+ * Trait that adds the functionality of Information Procedures. It collects and aggregates the statistics
  */
 trait ModelObservable {
+  /**
+   * Main statistics map: Category -> value
+   */
   private val statistics = mutable.HashMap(
     EVENTS_HANDLED -> 0d,
     RECEIVED_MESSAGES -> 0d,
@@ -50,6 +76,10 @@ trait ModelObservable {
     MAX_TIME_WINDOW -> 0d
   )
 
+  /**
+   * Writes all the gathered statistics into a log and flushs an internal buffer to get ready to restarting modelling
+   * @return the gathered statistics
+   */
   def stopModelling(): Statistics = {
     synchronized {
       val result = statistics.toMap
@@ -59,12 +89,21 @@ trait ModelObservable {
     }
   }
 
+  /**
+   * Writes statistics into a log.<br>
+   * You can use any <b>Statistics</b> map
+   * @param statistics any map: Category -> value
+   */
   def printStatistics(statistics: Statistics) {
     statistics.toList sortBy {_._1.toString} foreach {t =>
       Logger getLogger "statistics" info f"${t._1}%25s:   ${t._2}%4.1f"
     }
   }
 
+  /**
+   * Captures information about sent messages
+   * @param m message
+   */
   def statMessageSent(m: Message) {
     synchronized {
       statistics(SENT_MESSAGES) += 1
@@ -76,6 +115,10 @@ trait ModelObservable {
     }
   }
 
+  /**
+   * Captures information about received messages
+   * @param m message
+   */
   def statMessageReceived(m: Message) {
     synchronized {
       statistics(RECEIVED_MESSAGES) += 1
@@ -87,6 +130,11 @@ trait ModelObservable {
     }
   }
 
+  /**
+   * Captures information about rollbacks
+   * @param depth count of rolled back states
+   * @param timeWindow model time duration
+   */
   def statRolledback(depth: Int, timeWindow: Double) {
     synchronized {
       statistics(ROLLBACKS) += 1

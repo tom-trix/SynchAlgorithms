@@ -12,11 +12,11 @@ import ru.tomtrix.synch.ModelObservable._
 
 /**
  * Case class that contains results of a single modelling launch
- * @param statistics map Category -> Count
+ * @param statistics map Category -> value
  * @param time time taken by the launch
  */
 case class Results(statistics: Statistics, time: Long)
-case class Stub(n: Int) {
+case class Stub(var n: Int) {
   def cloneObject = copy()
 }
 

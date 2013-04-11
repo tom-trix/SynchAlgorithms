@@ -18,8 +18,8 @@ trait IModel[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserv
 
   /**
    * The basic method you must implement. It'll be invoked as soon as the Starter sends a message to get started.
-   * Your model ought to contain a state (any object you wish that could be serialized). This method must return this object
-   * @return not-null instance of Serializable you want to consider as your model's state
+   * Your model ought to contain a state (any object you wish that implements <b>cloneObject()</b>). This method must return this state
+   * @return not-null instance you want to consider as your model's state
    */
   def startModelling: T
 
@@ -86,7 +86,7 @@ trait IModel[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserv
   }
 
   /**
-   * Sends the message to a Starter actor described in <b>cators.starter</b> section of a config file
+   * Sends the message to a Starter actor described in <b>actors.starter</b> section of a <i>application.conf</i> file
    * @param m message to send
    */
   def sendMessageToStarter(m: Message) {
@@ -96,7 +96,7 @@ trait IModel[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserv
   }
 
   /**
-   * Sends the message to all of the actors described in <b>cators.others</b> section of a config file
+   * Sends the message to all of the actors described in <b>actors.other</b> section of a <i>application.conf</i> file
    * @param m message to send
    */
   def sendMessageToAll(m: Message) {

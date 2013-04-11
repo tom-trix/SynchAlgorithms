@@ -1,7 +1,7 @@
 package ru.tomtrix.synch
 
 /**
- * Dispatcher that informs all the other logic processes to start<br>This object can't receive the messages
+ * Dispatcher that informs all the other logic processes to start
  */
 object Starter extends App with IModel[Stub] {
   def startModelling = Stub(0)

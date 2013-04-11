@@ -7,37 +7,38 @@ import scala.concurrent.ExecutionContext.Implicits._
 import akka.actor.Cancellable
 import ru.tomtrix.synch.MessageImplicits.EVENT_MESSAGE
 
-case class W(var i: Long) {
-  def cloneObject = copy()
-}
-
-object Worker extends App with IModel[W] {
+/**
+ * Simple logic process for <b>TestGenerator</b> with a primitive incremental model
+ */
+object Worker extends App with IModel[Stub] {
+  /** random generator */
   val rand = new Random(Platform.currentTime)
+  /** akka scheduler for periodically sending the messages*/
   var scheduler: Cancellable = _
 
   def startModelling = {
     scheduler = system.scheduler.schedule(0 seconds, 30 milliseconds) {
       synchronized {
-        logger debug s"time = $getTime, state = ${getState.i}"
+        logger debug s"time = $getTime, state = ${getState.n}"
         changeStateAndTime(1 + rand.nextInt(10)){ t =>
-          t.i += 1
+          t.n += 1
         }
-        logger debug s"time = $getTime, state = ${getState.i}"
+        logger debug s"time = $getTime, state = ${getState.n}"
       }
       if (rand nextBoolean())
         sendMessageToAll(EVENT_MESSAGE(Some(0)))
     }
-    new W(0)
+    new Stub(0)
   }
 
   def onMessageReceived() {
     popMessage
     synchronized {
-      logger debug s"time = $getTime, state = ${getState.i}"
+      logger debug s"time = $getTime, state = ${getState.n}"
       changeStateAndTime(1 + rand.nextInt(10)){ t =>
-        t.i += 1
+        t.n += 1
       }
-      logger debug s"time = $getTime, state = ${getState.i}"
+      logger debug s"time = $getTime, state = ${getState.n}"
     }
   }
 
