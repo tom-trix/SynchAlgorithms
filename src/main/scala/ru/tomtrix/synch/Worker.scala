@@ -10,7 +10,7 @@ import ru.tomtrix.synch.MessageImplicits.EVENT_MESSAGE
 /**
  * Simple logic process for <b>TestGenerator</b> with a primitive incremental model
  */
-object Worker extends App with IModel[Stub] {
+object Worker extends App with Model[Stub] {
   /** random generator */
   val rand = new Random(Platform.currentTime)
   /** akka scheduler for periodically sending the messages*/

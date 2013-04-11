@@ -7,7 +7,7 @@ import ru.tomtrix.synch.SafeCode._
 /**
  * Agent that is responsible for sending and receiving messages
  */
-trait Communicator[T <: {def cloneObject: T}] { self: IModel[T] =>
+trait Communicator[T <: {def cloneObject: T}] { self: Model[T] =>
 
   /** Actor to receive messages */
   object Receiver extends Actor {
@@ -18,6 +18,11 @@ trait Communicator[T <: {def cloneObject: T}] { self: IModel[T] =>
    * @return Partial function that handles the received messages
    */
   def onReceive(): PartialFunction[Any, Unit]
+
+  /**
+   * @return nothing special
+   */
+  def ♥ = getState.cloneObject
 
   private val conf = ConfigFactory load()
 

@@ -10,7 +10,7 @@ import ru.tomtrix.synch.ApacheLogger._
 /**
  * Algorithm of classic optimistic synchronization
  */
-trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: IModel[T] =>
+trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
 
   /** stack to keep the previous states */
   private val stateStack = new ConcurrentLinkedDeque[(Double, T)]()

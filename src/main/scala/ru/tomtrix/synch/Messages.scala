@@ -98,7 +98,7 @@ class AntiMessage(baseMsg: Message) extends Message {
 }
 
 /**
- * Classes used by IModel's implicit methods
+ * Classes used by Model's implicit methods
  */
 object MessageImplicits {
   object TIME_RESPONSE

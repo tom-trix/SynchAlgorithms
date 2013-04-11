@@ -24,7 +24,7 @@ case class Stub(var n: Int) {
  * Test generator that is intended to be a Starter: it runs the modelling several times and aggregates
  * the obtained statistics by average measure. Args(0) may comprise the count of runs (otherwise count = 100)
  */
-object TestGenerator extends App with IModel[Stub] {
+object TestGenerator extends App with Model[Stub] {
 
   /** Count of launches (1 or more) */
   private val n = safe$ {max(args(0).toInt, 1)} getOrElse 100

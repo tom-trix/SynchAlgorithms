@@ -3,7 +3,7 @@ package ru.tomtrix.synch
 /**
  * Dispatcher that informs all the other logic processes to start
  */
-object Starter extends App with IModel[Stub] {
+object Starter extends App with Model[Stub] {
   def startModelling = Stub(0)
   def onMessageReceived() {}
   while (true) {

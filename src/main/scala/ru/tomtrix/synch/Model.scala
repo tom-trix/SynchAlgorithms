@@ -7,8 +7,9 @@ import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
 
 /**
  * Abstract trait that your model should implement
+ * @tparam T any type that implements <b>def cloneObject: T</b> method
  */
-trait IModel[T <: {def cloneObject: T}] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
+trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
 
   /** model's time */
   private var time: Double = _
@@ -56,7 +57,7 @@ trait IModel[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserv
 
   /**
    * Sets the time and the state<br>
-   * <b>DON'T USE IT IN USER'S CODE!!!</b> Use {@link ru.tomtrix.synch.IModel#changeStateAndTime changeStateAndTime} instead
+   * <b>DON'T USE IT IN USER'S CODE!!!</b> Use {@link ru.tomtrix.synch.Model#changeStateAndTime changeStateAndTime} instead
    * @param t time
    * @param s state
    */
@@ -107,4 +108,12 @@ trait IModel[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserv
   implicit def toMessage(x: INFO_MESSAGE): InfoMessage = InfoMessage(actorname, x.text)
   implicit def toMessage(x: STAT_RESPONSE): StatResponse = StatResponse(getTime, actorname, x.stat)
   implicit def toMessage(x: EVENT_MESSAGE): EventMessage = EventMessage(getTime, actorname, x.data)
+}
+
+/**
+ * This abstract class is a 100% analog of Model and made for backward compatibility with Java
+ * @tparam T any type that implements <b>def cloneObject: T</b> method
+ */
+abstract class JavaModel[T <: {def cloneObject: T}] extends Model[T] {
+  override def ♥ = getState.cloneObject
 }
