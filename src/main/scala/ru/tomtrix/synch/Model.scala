@@ -70,18 +70,16 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
 
   /**
    * Changes the time and the state of a model
-   * @param delta_t delta time
    * @param f function to modify the state
    * @example {{{  changeStateAndTime(5.5) {
    *   st => st.ball += 1
    * } }}}
    */
-  final def changeStateAndTime(delta_t: Double)(f: T => Any) {
+  final def changeStateAndTime(f: T => Double) {
     safe {
       synchronized {
         snapshot()
-        time += delta_t
-        f(state)
+        time += f(state)
       }
     }
   }

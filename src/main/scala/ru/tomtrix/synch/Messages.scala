@@ -7,7 +7,7 @@ import ru.tomtrix.synch.ModelObservable._
  * Base Message class to communicate among the actors.<br>
  * It contains a special generated ID and overriden {@link java.lang.Object#equals equals} method that compares by this ID
  */
-sealed abstract class Message extends Serializable {
+sealed abstract class Message extends Serializable with Comparable[Message] {
   val t: Double
   val sender: String
 
@@ -17,6 +17,8 @@ sealed abstract class Message extends Serializable {
     case m: Message => id == m.id
     case _ => false
   }
+
+  def compareTo(that: Message): Int = (t - that.t).toInt
 }
 
 /**
