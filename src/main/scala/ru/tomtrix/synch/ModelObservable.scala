@@ -6,6 +6,13 @@ import org.apache.log4j.Logger
 import ru.tomtrix.synch.ModelObservable._
 
 /**
+ * Category is a single statistics parameter
+ */
+abstract sealed class Category extends Serializable {
+  override def toString = getClass.getSimpleName.substring(0, getClass.getSimpleName.length-1)
+}
+
+/**
  * Companion for {@link ru.tomtrix.synch.ModelObservable ModelObservable} trait
  */
 object ModelObservable {
@@ -13,13 +20,6 @@ object ModelObservable {
    * Special alias for <b>Map[Category, Double]</b>
    */
   type Statistics = Map[Category, Double]
-
-  /**
-   * Category is a single statistics parameter
-   */
-  abstract sealed class Category extends Serializable {
-    override def toString = getClass.getSimpleName.substring(0, getClass.getSimpleName.length-1)
-  }
 
   /** Total amount of events handled by a logic process */
   object EVENTS_HANDLED extends Category

@@ -76,7 +76,7 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
    *   st => st.ball += 1
    * } }}}
    */
-  final def changeStateAndTime(delta_t: Double)(f: T => Unit) {
+  final def changeStateAndTime(delta_t: Double)(f: T => Any) {
     safe {
       synchronized {
         snapshot()

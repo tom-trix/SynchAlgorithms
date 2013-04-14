@@ -16,8 +16,24 @@ import ru.tomtrix.synch.ModelObservable._
  * @param time time taken by the launch
  */
 case class Results(statistics: Statistics, time: Long)
-case class Stub(var n: Int) {
+
+/**
+ * Simple model state stub
+ * @param n fake internal variable of a state
+ */
+case class Stub(var n: Long) {
+  /**
+   * Method required by Duck Typing conversions
+   * @return
+   */
   def cloneObject = copy()
+
+  /**
+   * Method for Java (cause case class doesn't provide the setters)
+   */
+  def javaInc() {
+    n+=1
+  }
 }
 
 /**

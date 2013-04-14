@@ -47,3 +47,76 @@ object Worker extends App with Model[Stub] {
     super.stopModelling()
   }
 }
+
+/* HOW TO DO THE SAME IN JAVA
+<dependency>
+    <groupId>ru.tomtrix</groupId>
+    <artifactId>asynch_algorithms</artifactId>
+    <version>1.0.0</version>
+</dependency>
+<dependency>
+    <groupId>com.typesafe.akka</groupId>
+    <artifactId>akka-actor_2.10</artifactId>
+    <version>2.1.2</version>
+</dependency>
+
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
+import scala.Function1;
+import scala.collection.immutable.Map;
+import scala.runtime.AbstractFunction1;
+import scala.concurrent.duration.FiniteDuration;
+import akka.actor.Cancellable;
+import ru.tomtrix.synch.*;
+
+
+public class Worker extends JavaModel<Stub>
+{
+    public static void main( String[] args ) {new Worker();}
+
+    private final Random rand = new Random(System.currentTimeMillis());
+    private final Worker worker = this;
+    private Cancellable scheduler = null;
+
+    private final Function1<Stub, Object> f = new AbstractFunction1<Stub, Object>() {
+        @Override
+        public Object apply(Stub t) {
+            t.javaInc();
+            return null;
+        }
+    };
+
+    @Override
+    public Stub startModelling() {
+
+        FiniteDuration fd = new FiniteDuration(30, TimeUnit.MILLISECONDS);
+        scheduler = system().scheduler().schedule(fd, fd, new Runnable() {
+            @Override
+            public void run() {
+                synchronized (worker) {
+                    logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
+                    changeStateAndTime(1.0 + rand.nextInt(10), f);
+                    logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
+                }
+                if (rand.nextBoolean())
+                    sendMessageToAll(new EventMessage(getTime(), actorname(), new scala.Some<Integer>(0)));
+            }
+        }, system().dispatcher());
+        return new Stub(0);
+    }
+
+    @Override
+    public void onMessageReceived() {
+        popMessage();
+        synchronized (worker) {
+            logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
+            changeStateAndTime(1.0 + rand.nextInt(10), f);
+            logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
+        }
+    }
+
+    public Map<Category, Object> stopModelling() {
+        scheduler.cancel();
+        return super.stopModelling();
+    }
+}*/
