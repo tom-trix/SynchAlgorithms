@@ -5,7 +5,6 @@ package ru.tomtrix.synch
  */
 object Starter extends App with Model[Stub] {
   def startModelling = Stub(0)
-  def onMessageReceived() {}
   while (true) {
     println("Press Enter to start...")
     readLine()

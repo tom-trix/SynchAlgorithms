@@ -72,8 +72,6 @@ object TestGenerator extends App with Model[Stub] {
     startModelling
   }
 
-  def onMessageReceived() {}
-
   def startModelling = {
     nodes ++= actornames
     sendMessageToAll(StartMessage)

@@ -27,7 +27,7 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
   /**
    * Invoked as soon as a new EventMessage is received
    */
-  def onMessageReceived()
+  def onMessageReceived() {}
 
   /**
    * Sends message <b>m</b> to <b>whom</b>
