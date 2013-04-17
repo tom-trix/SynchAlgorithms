@@ -20,10 +20,8 @@ object Worker extends App with Model[Stub] {
     scheduler = system.scheduler.schedule(0 seconds, 30 milliseconds) {
       synchronized {
         logger debug s"time = $getTime, state = ${getState.n}"
-        changeStateAndTime { t =>
-          t.n += 1
-          rand.nextInt(10)+1
-        }
+        getState.n += 1
+        addTime(rand.nextInt(10)+1)
         logger debug s"time = $getTime, state = ${getState.n}"
       }
       if (rand nextBoolean())
@@ -36,10 +34,8 @@ object Worker extends App with Model[Stub] {
     popMessage
     synchronized {
       logger debug s"time = $getTime, state = ${getState.n}"
-      changeStateAndTime { t =>
-        t.n += 1
-        rand.nextInt(10)+1
-      }
+      getState.n += 1
+      addTime(rand.nextInt(10)+1)
       logger debug s"time = $getTime, state = ${getState.n}"
     }
   }
@@ -80,14 +76,6 @@ public class Worker extends JavaModel<Stub>
     private final Worker worker = this;
     private Cancellable scheduler = null;
 
-    private final Function1<Stub, Double> f = new AbstractFunction1<Stub, Double>() {
-        @Override
-        public Object apply(Stub t) {
-            t.javaInc();
-            return 1.0 + rand.nextInt(10);
-        }
-    };
-
     @Override
     public Stub startModelling() {
 
@@ -97,7 +85,8 @@ public class Worker extends JavaModel<Stub>
             public void run() {
                 synchronized (worker) {
                     logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
-                    changeStateAndTime(f);
+                    getState().javaInc();
+                    addTime(1.0 + rand.nextInt(10));
                     logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
                 }
                 if (rand.nextBoolean())
@@ -112,7 +101,8 @@ public class Worker extends JavaModel<Stub>
         popMessage();
         synchronized (worker) {
             logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
-            changeStateAndTime(f);
+            getState().javaInc();
+            addTime(1.0 + rand.nextInt(10));
             logger().debug(String.format("time = %.1f, state = %d", getTime(), getState().n()));
         }
     }

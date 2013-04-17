@@ -69,17 +69,13 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
   }
 
   /**
-   * Changes the time and the state of a model
-   * @param f function to modify the state
-   * @example {{{  changeStateAndTime(5.5) {
-   *   st => st.ball += 1
-   * } }}}
+   * Changes the time of a model and performs a snapshot if it is necessary
    */
-  final def changeStateAndTime(f: T => Double) {
+  final def addTime(t: => Double) {
     safe {
       synchronized {
+        time += t
         snapshot()
-        time += f(state)
       }
     }
   }
