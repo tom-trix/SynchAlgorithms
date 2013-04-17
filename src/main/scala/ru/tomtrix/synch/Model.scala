@@ -35,7 +35,7 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
     case m: InfoMessage => logger info m.text
     case TimeRequest => sendMessageToStarter(TIME_RESPONSE)
     case StopMessage => sendMessageToStarter(STAT_RESPONSE(stopModelling()))
-    case StartMessage => setStateAndTime(0, startModelling)
+    case StartMessage => setStateAndTime(0, startModelling); snapshot()
     case _ => logger error s"Unknown message (state = ${state.cloneObject})"
   }
 
@@ -71,7 +71,7 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
   /**
    * Changes the time of a model and performs a snapshot if it is necessary
    */
-  final def addTime(t: => Double) {
+  final def addTime(t: Double) {
     safe {
       synchronized {
         time += t
