@@ -51,7 +51,8 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
    * @return GVT
    */
   private def calculateGVTAndFreeMemory() = {
-    val gvt = (gvtMap map { _._2 }).min
+    -1d //gvt вычисляется неверно!
+    /*val gvt = (gvtMap map { _._2 }).min
     log"gvt = $gvt"
     var q = stateStack peekLast()
     while (q != null)
@@ -67,7 +68,7 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
         msgStack peekLast()
       }
       else null
-    gvt
+    gvt*/
   }
 
   /**
