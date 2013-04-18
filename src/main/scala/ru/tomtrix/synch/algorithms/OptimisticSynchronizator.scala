@@ -127,7 +127,11 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
         statMessageReceived(m)
         if (m.t < getTime) rollback(m)
         // если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
-        else inputQueue find {_ == m} map {t => inputQueue -= m} getOrElse {inputQueue += m; onMessageReceived()}
+        else inputQueue find {_ == m} map {t => inputQueue -= m} getOrElse {
+          inputQueue += m
+          if (m.isInstanceOf[EventMessage])
+            onMessageReceived()
+        }
         log"Statestack = $stateStack"
         log"Msgstack = $msgStack"
         log"InputQueue = $inputQueue"
