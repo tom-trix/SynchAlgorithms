@@ -101,12 +101,12 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
           else null
 
         // finally calculate GVT & remove useless state/messages to free memory
-        log"causedBy = ${m.sender}; map = $gvtMap"
         if (m.isInstanceOf[EventMessage])  //IMPORTANT!!!
           gvtMap += m.sender -> getTime
         val gvt = calculateGVTAndFreeMemory()
 
         //assert that everything is OK
+        log"Time = $getTime; State = $getState"
         assert(getTime <= m.t, s"getTime = $getTime, t = ${m.t}")
         assert(msgStack.isEmpty || msgStack.peek()._1.t <= m.t)
         assert(msgStack.isEmpty || msgStack.peekLast()._1.t >= gvt)
@@ -128,15 +128,12 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
         statMessageReceived(m)
         if (m.t < getTime) rollback(m)
         // если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
-        else inputQueue find {_ == m} map {t => inputQueue -= m} getOrElse {
+        inputQueue find {_ == m} map {t => inputQueue -= m} getOrElse {
           if (m.isInstanceOf[EventMessage]) {
             inputQueue += m
             onMessageReceived()
           }
         }
-        log"Statestack = $stateStack"
-        log"Msgstack = $msgStack"
-        log"InputQueue = $inputQueue"
       }
     }
   }
@@ -147,6 +144,7 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
   final def snapshot() {
     synchronized {
       stateStack push getTime -> getState.cloneObject
+      log"Time = $getTime; State = $getState"
       if (stateStack.size > 10000) {
         stateStack pollLast()
         logger error "stack overflown"
