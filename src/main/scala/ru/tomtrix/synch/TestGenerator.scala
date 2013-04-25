@@ -23,12 +23,6 @@ case class Results(statistics: Statistics, time: Long)
  */
 case class Stub(var n: Long) {
   /**
-   * Method required by Duck Typing conversions
-   * @return
-   */
-  def cloneObject = copy()
-
-  /**
    * Method for Java (cause case class doesn't provide the setters)
    */
   def javaInc() {

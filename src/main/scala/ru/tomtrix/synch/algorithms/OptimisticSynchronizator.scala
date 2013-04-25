@@ -6,14 +6,15 @@ import scala.collection.mutable.ListBuffer
 import ru.tomtrix.synch._
 import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.ApacheLogger._
+import ru.tomtrix.synch.Serializer._
 
 /**
  * Algorithm of classic optimistic synchronization
  */
-trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
+trait OptimisticSynchronizator[T <: Serializable] { self: Model[T] =>
 
   /** stack to keep the previous states */
-  private val stateStack = new ConcurrentLinkedDeque[(Double, T)]()
+  private val stateStack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
 
   /** stack to keep the sent messages*/
   private val msgStack = new ConcurrentLinkedDeque[(Message, String)]()
@@ -81,17 +82,21 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
         log"ROLLBACK to ${m.t}"
         // pop all the states from the stack until find one with time ≤ t
         var depth = 1
-        var q = stateStack poll()
+        var q = stateStack peek() //обязательно peek!
         while (q != null)
           q = if (q._1 <= m.t) {
             statRolledback(depth, getTime-q._1)
-            setStateAndTime(q._1, q._2)
+            setStateAndTime(q._1, deserialize(q._2))
             null
           }
-          else {depth+=1; stateStack poll()}
+          else {
+            depth+=1
+            stateStack pop()
+            stateStack peek()
+          }
 
         // send anti-messages
-        var w = msgStack peek() //обязательно peek! Не факт, что элемент нужно будет удалить
+        var w = msgStack peek() //обязательно peek!
         while (w != null)
           w = if (w._1.t > m.t) {
             sendMessage(w._2, new AntiMessage(w._1))
@@ -143,7 +148,7 @@ trait OptimisticSynchronizator[T <: {def cloneObject: T}] { self: Model[T] =>
     */
   final def snapshot() {
     synchronized {
-      stateStack push getTime -> getState.cloneObject
+      stateStack push getTime -> serialize(getState)
       log"Time = $getTime; State = $getState"
       if (stateStack.size > 10000) {
         stateStack pollLast()

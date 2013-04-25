@@ -7,9 +7,9 @@ import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
 
 /**
  * Abstract trait that your model should implement
- * @tparam T any type that implements <b>def cloneObject: T</b> method
+ * @tparam T any type that implements <b>Serializable</b>
  */
-trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
+trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
 
   /** model's time */
   private var time: Double = _
@@ -19,7 +19,7 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
 
   /**
    * The basic method you must implement. It'll be invoked as soon as the Starter sends a message to get started.
-   * Your model ought to contain a state (any object you wish that implements <b>cloneObject()</b>). This method must return this state
+   * Your model ought to contain a state (any object you wish that implements <b>Serializable</b>). This method must return this state
    * @return not-null instance you want to consider as your model's state
    */
   def startModelling: T
@@ -36,7 +36,7 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
     case TimeRequest => sendMessageToStarter(TIME_RESPONSE)
     case StopMessage => sendMessageToStarter(STAT_RESPONSE(stopModelling()))
     case StartMessage => setStateAndTime(0, startModelling); snapshot()
-    case _ => logger error s"Unknown message (state = ${state.cloneObject})"
+    case _ => logger error s"Unknown message"
   }
 
   override def sendMessage(whom: String, m: Message) {
@@ -57,7 +57,7 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
 
   /**
    * Sets the time and the state<br>
-   * <b>DON'T USE IT IN USER'S CODE!!!</b> Use {@link ru.tomtrix.synch.Model#changeStateAndTime changeStateAndTime} instead
+   * <b>DON'T USE IT IN USER'S CODE!!!</b> Use {@link ru.tomtrix.synch.Model#getState getState} and {@link ru.tomtrix.synch.Model#addTime addTime} instead
    * @param t time
    * @param s state
    */
@@ -106,8 +106,6 @@ trait Model[T <: {def cloneObject: T}] extends Communicator[T] with ModelObserva
 
 /**
  * This abstract class is a 100% analog of Model and made for backward compatibility with Java
- * @tparam T any type that implements <b>def cloneObject: T</b> method
+ * @tparam T any type that implements <b>Serializable</b>
  */
-abstract class JavaModel[T <: {def cloneObject: T}] extends Model[T] {
-  override def ♥ = getState.cloneObject
-}
+abstract class JavaModel[T <: Serializable] extends Model[T]
