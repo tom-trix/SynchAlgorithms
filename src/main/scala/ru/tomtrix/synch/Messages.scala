@@ -83,7 +83,7 @@ case class StatResponse(t: Double, sender: String, statistics: Statistics) exten
  * @param sender name of actor sending the message
  * @param data message body
  */
-case class EventMessage(t: Double, sender: String, data: Serializable) extends Message
+case class EventMessage(t: Double, sender: String, data: HashSerializable) extends Message
 
 /**
  * Antimessage that is used to eliminate <b>EventMessages</b> sent erroneously before
@@ -106,5 +106,5 @@ object MessageImplicits {
   object TIME_RESPONSE
   case class INFO_MESSAGE(text: String)
   case class STAT_RESPONSE(stat: Statistics)
-  case class EVENT_MESSAGE(data: Serializable)
+  case class EVENT_MESSAGE(data: HashSerializable)
 }

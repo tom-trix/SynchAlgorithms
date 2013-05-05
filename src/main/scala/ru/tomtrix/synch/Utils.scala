@@ -1,6 +1,7 @@
 package ru.tomtrix.synch
 
 import java.io._
+import scala.collection.JavaConversions
 
 /**
  * Log4j apache logger
@@ -95,6 +96,10 @@ object SafeCode extends Loggable {
    * @return Option[T]
    */
   def safe$[T](func: => T, finallyFunc: => Unit = {}): Option[T] = safe(func, finallyFunc, log = false)
+}
+
+class Java2Scala[V] {
+  def asSet(s: java.util.Set[V]): Set[V] = JavaConversions.asScalaSet(s).toSet
 }
 
 /**

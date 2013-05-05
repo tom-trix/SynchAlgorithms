@@ -9,7 +9,7 @@ import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
  * Abstract trait that your model should implement
  * @tparam T any type that implements <b>Serializable</b>
  */
-trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
+trait Model[T <: HashSerializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
 
   /** model's time */
   private var time: Double = _
@@ -108,4 +108,4 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
  * This abstract class is a 100% analog of Model and made for backward compatibility with Java
  * @tparam T any type that implements <b>Serializable</b>
  */
-abstract class JavaModel[T <: Serializable] extends Model[T]
+abstract class JavaModel[T <: HashSerializable] extends Model[T]

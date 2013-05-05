@@ -25,7 +25,7 @@ object Worker extends App with Model[Stub] {
         logger debug s"time = $getTime, state = ${getState.n}"
       }
       if (rand nextBoolean())
-        sendMessageToAll(EVENT_MESSAGE(Some(0)))
+        sendMessageToAll(EVENT_MESSAGE(Stub(0)))
     }
     new Stub(0)
   }

@@ -11,7 +11,7 @@ import ru.tomtrix.synch.Serializer._
 /**
  * Algorithm of classic optimistic synchronization
  */
-trait OptimisticSynchronizator[T <: Serializable] { self: Model[T] =>
+trait OptimisticSynchronizator[T <: HashSerializable] { self: Model[T] =>
 
   /** stack to keep the previous states */
   private val stateStack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()
@@ -128,6 +128,7 @@ trait OptimisticSynchronizator[T <: Serializable] { self: Model[T] =>
   final def handleMessage(m: Message) {
     safe {
       synchronized {
+        if (m.isInstanceOf[EventMessage]) Gatherer.addMessage(getTime, m.asInstanceOf[EventMessage])
         assert(m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
         log"Принято сообщение $m"
         statMessageReceived(m)
