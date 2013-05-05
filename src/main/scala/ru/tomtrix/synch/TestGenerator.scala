@@ -22,7 +22,7 @@ case class Results(statistics: Statistics, time: Long)
  * @param n fake internal variable of a state
  */
 case class Stub(var n: Long) extends HashSerializable {
-  def toSetOfHash = Seq(n.toString)
+  def toHash = n.toString
   /**
    * Method for Java (cause case class doesn't provide the setters)
    */
