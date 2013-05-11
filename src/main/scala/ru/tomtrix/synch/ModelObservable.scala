@@ -4,7 +4,6 @@ import scala.math._
 import scala.collection.mutable
 import org.apache.log4j.Logger
 import ru.tomtrix.synch.ModelObservable._
-import ru.tomtrix.synch.algorithms.Gatherer
 
 /**
  * Category is a single statistics parameter
@@ -86,7 +85,6 @@ trait ModelObservable {
       val result = statistics.toMap
       printStatistics(result)
       statistics foreach {t => statistics(t._1) = 0}
-      Gatherer onFinish()
       result
     }
   }

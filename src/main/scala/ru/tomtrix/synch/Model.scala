@@ -25,6 +25,7 @@ trait Model[T <: HashSerializable] extends Communicator[T] with ModelObservable 
   def startModelling: T
 
   override def stopModelling() = {
+    printGraphs()
     resetBuffers()
     super.stopModelling()
   }

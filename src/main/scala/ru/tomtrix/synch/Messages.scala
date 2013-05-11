@@ -2,6 +2,7 @@ package ru.tomtrix.synch
 
 import java.util.UUID
 import ru.tomtrix.synch.ModelObservable._
+import ru.tomtrix.synch.StringUtils._
 
 /**
  * Base Message class to communicate among the actors.<br>
@@ -16,6 +17,10 @@ sealed abstract class Message extends Serializable with Comparable[Message] {
   override def equals(obj: Any) = obj match {
     case m: Message => id == m.id
     case _ => false
+  }
+
+  override def toString = {
+    s"${getClass.getSimpleName}(${t roundBy 3}, $sender)"
   }
 
   def compareTo(that: Message): Int = (t - that.t).toInt
@@ -75,7 +80,12 @@ case class TimeResponse(t: Double, sender: String) extends Message
  * @param sender name of actor sending the message
  * @param statistics map: Category -> value
  */
-case class StatResponse(t: Double, sender: String, statistics: Statistics) extends Message
+case class StatResponse(t: Double, sender: String, statistics: Statistics) extends Message {
+  override def toString = {
+    val msg = super.toString
+    s"${msg.substring(0, msg.length-1)}; $statistics)"
+  }
+}
 
 /**
  * Main message that brings the model event
@@ -83,7 +93,12 @@ case class StatResponse(t: Double, sender: String, statistics: Statistics) exten
  * @param sender name of actor sending the message
  * @param data message body
  */
-case class EventMessage(t: Double, sender: String, data: HashSerializable) extends Message
+case class EventMessage(t: Double, sender: String, data: HashSerializable) extends Message {
+  override def toString = {
+    val msg = super.toString
+    s"${msg.substring(0, msg.length-1)}; $data)"
+  }
+}
 
 /**
  * Antimessage that is used to eliminate <b>EventMessages</b> sent erroneously before
@@ -95,7 +110,7 @@ class AntiMessage(baseMsg: Message) extends Message {
   override val id = baseMsg.id
 
   override def toString = {
-    s"AntiMessage (t = $t)"
+    s"AntiMessage(${t roundBy 3})"
   }
 }
 

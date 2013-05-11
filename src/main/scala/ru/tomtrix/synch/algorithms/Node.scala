@@ -7,8 +7,12 @@ case object RECEIVED extends CommunicationType
 
 case class Node(agent: String, recipient: String, action: String, communicationType: CommunicationType) {
   val arcs = new ProbabilityArcSet
-  var total = 0
+  var total = 1
   var rolledBack = 0
+
+  def toVerboseString = {
+    s"Node($agent, $recipient, $action, $communicationType; total=$total; rolledBack=$rolledBack; arcs=${arcs.getNodesAndProbabilities})"
+  }
 }
 
 class ProbabilityArcSet {

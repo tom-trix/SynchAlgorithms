@@ -98,6 +98,17 @@ object SafeCode extends Loggable {
   def safe$[T](func: => T, finallyFunc: => Unit = {}): Option[T] = safe(func, finallyFunc, log = false)
 }
 
+object StringUtils {
+  class RoundedDouble(d: Double) {
+    def roundBy(r: Int): String = {
+      val ds = d.toString
+      ds.substring(0, math.min(ds.indexOf(".") + r + 1, ds.length))
+    }
+  }
+
+  implicit def toRoundedDouble(d: Double) = new RoundedDouble(d)
+}
+
 class Java2Scala[V] {
   def asSet(s: java.util.Set[V]): Set[V] = JavaConversions.asScalaSet(s).toSet
 }

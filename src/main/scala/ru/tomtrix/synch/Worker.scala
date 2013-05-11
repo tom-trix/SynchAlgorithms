@@ -30,7 +30,7 @@ object Worker extends App with Model[Stub] {
     new Stub(0)
   }
 
-  override def onMessageReceived() {
+  /*override*/ def onMessageReceived() {
     popMessage
     synchronized {
       logger debug s"time = $getTime, state = ${getState.n}"
