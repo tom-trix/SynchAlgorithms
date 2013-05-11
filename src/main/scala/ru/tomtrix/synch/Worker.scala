@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import akka.actor.Cancellable
 import ru.tomtrix.synch.MessageImplicits.EVENT_MESSAGE
+import ru.tomtrix.synch.algorithms.AgentEvent
 
 /**
  * Simple logic process for <b>TestGenerator</b> with a primitive incremental model
@@ -15,6 +16,8 @@ object Worker extends App with Model[Stub] {
   val rand = new Random(Platform.currentTime)
   /** akka scheduler for periodically sending the messages*/
   var scheduler: Cancellable = _
+
+  def convertRollback(m: EventMessage): AgentEvent = null
 
   def startModelling = {
     scheduler = system.scheduler.schedule(0 seconds, 30 milliseconds) {

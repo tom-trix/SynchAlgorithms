@@ -9,6 +9,7 @@ import org.apache.log4j.Logger
 import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.ApacheLogger._
 import ru.tomtrix.synch.ModelObservable._
+import ru.tomtrix.synch.algorithms.AgentEvent
 
 /**
  * Case class that contains results of a single modelling launch
@@ -66,6 +67,8 @@ object TestGenerator extends App with Model[Stub] {
     }
     startModelling
   }
+
+  def convertRollback(m: EventMessage): AgentEvent = null
 
   def startModelling = {
     nodes ++= actornames

@@ -5,13 +5,15 @@ case object LOCAL extends CommunicationType
 case object SENT extends CommunicationType
 case object RECEIVED extends CommunicationType
 
-case class Node(agent: String, recipient: String, action: String, communicationType: CommunicationType) {
+case class AgentEvent(agent: String, recipient: String, action: String)
+
+case class Node(event: AgentEvent, communicationType: CommunicationType) {
   val arcs = new ProbabilityArcSet
   var total = 1
   var rolledBack = 0
 
   def toVerboseString = {
-    s"Node($agent, $recipient, $action, $communicationType; total=$total; rolledBack=$rolledBack; arcs=${arcs.getNodesAndProbabilities})"
+    s"Node($event, $communicationType; total=$total; rolledBack=$rolledBack; arcs=${arcs.getNodesAndProbabilities})"
   }
 }
 

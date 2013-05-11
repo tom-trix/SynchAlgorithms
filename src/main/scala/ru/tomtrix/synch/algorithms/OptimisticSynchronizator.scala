@@ -104,10 +104,14 @@ trait OptimisticSynchronizator[T <: HashSerializable] extends AgentAnalyser { se
             msgStack peek()
           }
 
-        // finally calculate GVT & remove useless state/messages to free memory
+        // calculate GVT & remove useless state/messages to free memory
         if (m.isInstanceOf[EventMessage])  //IMPORTANT!!!
           gvtMap += m.sender -> getTime
         val gvt = calculateGVTAndFreeMemory()
+
+        // remember the rollback
+        if (m.isInstanceOf[EventMessage])
+          registerRollback(convertRollback(m.asInstanceOf[EventMessage]))
 
         //assert that everything is OK
         log"Time = ${getTime.roundBy(3)}; State = $getState"
