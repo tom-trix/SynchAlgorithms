@@ -16,30 +16,41 @@ trait AgentAnalyser extends Loggable {
 
   def convertRollback(m: EventMessage): AgentEvent
 
-  def registerEvent(t: Double, event: AgentEvent, isSent: Boolean, isReceived: Boolean) {
-    assert(!(isSent && isReceived), "Message cannot be sent and received in the same time")
+  private def addNode(t: Double, agentname: String, node: Node) {
     synchronized {
-      // create a new node
-      val node = Node(event, if (isSent) SENT else if (isReceived) RECEIVED else LOCAL)
-
       // add the node into a graph (since Graph is a set, multiply nodes will be resolved into a single one)
       // important! We connect nodes if and only if STRICTLY (previous.t < current.t)
-      graphs += event.agent -> (graphs get event.agent map {g: GraphInfo =>
-        g.graph find {_ == node} foreach {_.total += 1}
-        g.graph find {_ == g.prevNode} foreach {p => if (timestamps.get(event.agent).getOrElse(0d) < t) p.arcs connectNode node}
-        GraphInfo(g.graph + node, node)
-      } getOrElse GraphInfo(Set(node), node))
+      val nod = node.copy()
+      graphs += agentname -> (graphs get agentname map {g: GraphInfo =>
+        g.graph find {_ == nod} foreach {_.total += 1}
+        g.graph find {_ == g.prevNode} foreach {p => if (timestamps.get(agentname).getOrElse(0d) < t) p.arcs connectNode nod}
+        GraphInfo(g.graph + nod, nod)
+      } getOrElse GraphInfo(Set(nod), nod))
 
       // remember the timestamp
-      timestamps += event.agent -> t
+      timestamps += agentname -> t
     }
   }
 
+  private def addRollback(agentname: String, event: AgentEvent) {
+    synchronized {
+      for {
+        graphinfo <- graphs get agentname
+        node <- graphinfo.graph find {_.event == event}
+      } yield node.rolledBack += 1
+    }
+  }
+
+  def registerEvent(t: Double, event: AgentEvent, isSent: Boolean, isReceived: Boolean) {
+    assert(!(isSent && isReceived), "Message cannot be sent and received in the same time")
+    val node = Node(event, if (isSent) SENT else if (isReceived) RECEIVED else LOCAL)
+    addNode(t, event.agent, node)
+    addNode(t, event.recipient, node)
+  }
+
   def registerRollback(event: AgentEvent) {
-    for {
-      graphinfo <- graphs get event.agent
-      node <- graphinfo.graph find {_.event == event}
-    } yield node.rolledBack += 1
+    addRollback(event.agent, event)
+    addRollback(event.recipient, event)
   }
 
   def printGraphs() {
