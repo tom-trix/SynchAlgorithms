@@ -7,7 +7,11 @@ import ru.tomtrix.synch.algorithms.AgentEvent
  */
 object Starter extends App with Model[Stub] {
   def startModelling = Stub(0)
-  def convertRollback(m: EventMessage): AgentEvent = null
+  def convertToEvent(m: EventMessage): AgentEvent = null
+  def convertToActor(e: AgentEvent) = ""
+  def handleDeadlockMessage(m: DeadlockMessage) {}
+  def suspendModelling() {}
+  def resumeModelling() {}
   while (true) {
     readLine().toLowerCase.trim match {
       case "stop" => sendMessageToAll(StopMessage)

@@ -33,6 +33,7 @@ trait Model[T <: HashSerializable] extends Communicator[T] with ModelObservable 
   def onReceive() = {
     case m: EventMessage => handleMessage(m)
     case m: AntiMessage => handleMessage(m)
+    case m: DeadlockMessage => handleDeadlockMessage(m); logger debug s"Received DeadlockMessage $m"
     case m: InfoMessage => logger info m.text
     case TimeRequest => sendMessageToStarter(TIME_RESPONSE)
     case StopMessage => sendMessageToStarter(STAT_RESPONSE(stopModelling()))
