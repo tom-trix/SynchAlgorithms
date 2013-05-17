@@ -238,6 +238,9 @@
                                 <resource>
                                     <directory>src/main/resources</directory>
                                     <filtering>true</filtering>
+                                    <includes>
+                                        <include>*.conf</include>
+                                    </includes>
                                 </resource>
                             </resources>
                         </configuration>
