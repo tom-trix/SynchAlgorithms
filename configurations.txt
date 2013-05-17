@@ -14,7 +14,7 @@ akka {
 actors {
     system = "greeting"
     name = "testgenerator"
-    others = ["127.0.0.1:2551/user/trix1", "127.0.0.1:2552/user/trix2"]
+    others = ["127.0.0.1:2551/user/node1", "127.0.0.1:2552/user/node2"]
 }
 
 ====
@@ -34,8 +34,8 @@ akka {
 
 actors {
     system = "greeting"
-    name = "trix1"
-    others = ["127.0.0.1:2552/user/trix2"]
+    name = "node1"
+    others = ["127.0.0.1:2552/user/node2"]
     starter = "127.0.0.1:2550/user/testgenerator"
 }
 
@@ -56,7 +56,7 @@ akka {
 
 actors {
     system = "greeting"
-    name = "trix2"
-    others = ["127.0.0.1:2551/user/trix1"]
+    name = "node2"
+    others = ["127.0.0.1:2551/user/node1"]
     starter = "127.0.0.1:2550/user/testgenerator"
 }

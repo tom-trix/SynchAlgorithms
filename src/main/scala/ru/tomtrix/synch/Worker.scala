@@ -19,7 +19,7 @@ object Worker extends App with Model[Stub] {
 
   def convertToEvent(m: EventMessage) = null
   def convertToActor(e: AgentEvent) = ""
-  def handleDeadlockMessage(m: DeadlockMessage) {}
+  def handleDeadlockMessage() {}
   def suspendModelling() {}
   def resumeModelling() {}
 

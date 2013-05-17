@@ -26,7 +26,7 @@ trait AgentAnalyser[T <: HashSerializable] extends Loggable { self: Model[T] =>
 
   def resumeModelling()
 
-  def handleDeadlockMessage(m: DeadlockMessage)
+  def handleDeadlockMessage()
 
   private def addNode(t: Double, agentname: String, node: Node) {
     synchronized {
@@ -67,7 +67,7 @@ trait AgentAnalyser[T <: HashSerializable] extends Loggable { self: Model[T] =>
                 if (node.event.agent == neighs.head.event.recipient && node.event.recipient == neighs.head.event.agent) {
                   lockingEvent = Some(neighs.head.event)
                   suspendModelling()
-                  sendMessage(convertToActor(lockingEvent.get), DeadlockMessage(lockingEvent.get))
+                  sendMessage(convertToActor(lockingEvent.get), DeadlockMessage)
                   logger debug s"Modelling is suspended! Detected: ${node.event}; waiting for ${lockingEvent.get}"
                 }
       }

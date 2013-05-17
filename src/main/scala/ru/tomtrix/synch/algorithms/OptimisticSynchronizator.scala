@@ -136,13 +136,12 @@ trait OptimisticSynchronizator[T <: HashSerializable] extends AgentAnalyser[T] {
         statMessageReceived(m)
         if (!timeIsLessThanMessage(getTime, m)) rollback(m)
         // если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
-        inputQueue find {_ == m} map {t => inputQueue -= m} getOrElse {
-          if (m.isInstanceOf[EventMessage])
+        inputQueue find {_ == m} map {t => inputQueue -= m; log"Сообщения взаимно удалены: $m"} getOrElse {
+          if (m.isInstanceOf[EventMessage]) {
             inputQueue = (inputQueue += m).sorted
+            onMessageReceived(m.asInstanceOf[EventMessage])
+          }
         }
-        // отправляем инфу анализатору
-        if (m.isInstanceOf[EventMessage])
-          onMessageReceived(m.asInstanceOf[EventMessage])
       }
     }
   }

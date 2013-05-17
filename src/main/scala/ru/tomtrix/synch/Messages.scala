@@ -3,7 +3,6 @@ package ru.tomtrix.synch
 import java.util.UUID
 import ru.tomtrix.synch.ModelObservable._
 import ru.tomtrix.synch.StringUtils._
-import ru.tomtrix.synch.algorithms.AgentEvent
 
 /**
  * Base Message class to communicate among the actors.<br>
@@ -59,6 +58,11 @@ object TimeRequest extends Message {
   val sender = "Starter"
 }
 
+object DeadlockMessage extends Message {
+  val t = -1d
+  val sender = ""
+}
+
 /**
  * Information message used basicly for debugging
  * @param sender name of actor sending the message
@@ -112,18 +116,6 @@ class AntiMessage(baseMsg: Message) extends Message {
 
   override def toString = {
     s"AntiMessage(${t roundBy 3})"
-  }
-}
-
-/**
- * @param waitFor
- */
-case class DeadlockMessage(waitFor: AgentEvent) extends Message {
-  val t = -1d
-  val sender = ""
-
-  override def toString = {
-    s"DeadlockMessage($waitFor)"
   }
 }
 
