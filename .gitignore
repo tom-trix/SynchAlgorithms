@@ -1,12 +1,5 @@
 *.iml
 *.log
-*.timestamp
-*.class
 *.bat
 .idea/*
-target/classes/*
-target/maven-archiver/*
-target/surefire-reports/*
-target/1/*
-target/2/*
-target/*.jar
+target/*
