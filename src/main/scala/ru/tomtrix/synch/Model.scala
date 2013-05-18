@@ -9,7 +9,7 @@ import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
  * Abstract trait that your model should implement
  * @tparam T any type that implements <b>Serializable</b>
  */
-trait Model[T <: HashSerializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
+trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
 
   /** model's time */
   private var time: Double = _
@@ -34,7 +34,7 @@ trait Model[T <: HashSerializable] extends Communicator[T] with ModelObservable 
     case m: EventMessage => handleMessage(m)
     case m: AntiMessage => handleMessage(m)
     case m: InfoMessage => logger info m.text
-    case DeadlockMessage => handleDeadlockMessage(); logger debug s"Received DeadlockMessage"
+    case m: DeadlockMessage => handleDeadlockMessage(m); logger debug s"Received $m"
     case TimeRequest => sendMessageToStarter(TIME_RESPONSE)
     case StopMessage => sendMessageToStarter(STAT_RESPONSE(stopModelling()))
     case StartMessage => setStateAndTime(0, startModelling); snapshot()
@@ -110,4 +110,4 @@ trait Model[T <: HashSerializable] extends Communicator[T] with ModelObservable 
  * This abstract class is a 100% analog of Model and made for backward compatibility with Java
  * @tparam T any type that implements <b>Serializable</b>
  */
-abstract class JavaModel[T <: HashSerializable] extends Model[T]
+abstract class JavaModel[T <: Serializable] extends Model[T]

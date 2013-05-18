@@ -1,4 +1,4 @@
-package ru.tomtrix.synch
+package ru.tomtrix.synch.models
 
 import scala.math._
 import scala.compat.Platform
@@ -6,6 +6,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import org.apache.log4j.Logger
+import ru.tomtrix.synch._
 import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.ApacheLogger._
 import ru.tomtrix.synch.ModelObservable._
@@ -22,7 +23,7 @@ case class Results(statistics: Statistics, time: Long)
  * Simple model state stub
  * @param n fake internal variable of a state
  */
-case class Stub(var n: Long) extends HashSerializable {
+case class Stub(var n: Long) extends Serializable {
   def toHash = n.toString
   /**
    * Method for Java (cause case class doesn't provide the setters)
@@ -70,7 +71,7 @@ object TestGenerator extends App with Model[Stub] {
 
   def convertToEvent(m: EventMessage) = null
   def convertToActor(e: AgentEvent) = ""
-  def handleDeadlockMessage() {}
+  def handleDeadlockMessage(m: DeadlockMessage) {}
   def suspendModelling() {}
   def resumeModelling() {}
 

@@ -45,7 +45,15 @@ object ModelObservable {
   object ROLLBACKS_DEPTH_2 extends Category
   /** Amount of rollbacks that turned back 3 states */
   object ROLLBACKS_DEPTH_3 extends Category
-  /** Amount of rollbacks that turned back 3 or more states */
+  /** Amount of rollbacks that turned back 4 states */
+  object ROLLBACKS_DEPTH_4 extends Category
+  /** Amount of rollbacks that turned back 5 states */
+  object ROLLBACKS_DEPTH_5 extends Category
+  /** Amount of rollbacks that turned back 6 states */
+  object ROLLBACKS_DEPTH_6 extends Category
+  /** Amount of rollbacks that turned back 7 states */
+  object ROLLBACKS_DEPTH_7 extends Category
+  /** Amount of rollbacks that turned back 8 or more states */
   object ROLLBACKS_DEPTH_MORE extends Category
   /** Max model time duration that was rolled back during the modelling */
   object MAX_TIME_WINDOW extends Category
@@ -72,6 +80,10 @@ trait ModelObservable {
     ROLLBACKS_DEPTH_1 -> 0d,
     ROLLBACKS_DEPTH_2 -> 0d,
     ROLLBACKS_DEPTH_3 -> 0d,
+    ROLLBACKS_DEPTH_4 -> 0d,
+    ROLLBACKS_DEPTH_5 -> 0d,
+    ROLLBACKS_DEPTH_6 -> 0d,
+    ROLLBACKS_DEPTH_7 -> 0d,
     ROLLBACKS_DEPTH_MORE -> 0d,
     MAX_TIME_WINDOW -> 0d
   )
@@ -142,11 +154,21 @@ trait ModelObservable {
         case 1 => statistics(ROLLBACKS_DEPTH_1) += 1
         case 2 => statistics(ROLLBACKS_DEPTH_2) += 1
         case 3 => statistics(ROLLBACKS_DEPTH_3) += 1
-        case i if i > 3 => statistics(ROLLBACKS_DEPTH_MORE) += 1
+        case 4 => statistics(ROLLBACKS_DEPTH_4) += 1
+        case 5 => statistics(ROLLBACKS_DEPTH_5) += 1
+        case 6 => statistics(ROLLBACKS_DEPTH_6) += 1
+        case 7 => statistics(ROLLBACKS_DEPTH_7) += 1
+        case i if i >= 8 => statistics(ROLLBACKS_DEPTH_MORE) += 1
         case _ =>
       }
       statistics(ROLLBACKS_MAXDEPTH) = max(statistics(ROLLBACKS_MAXDEPTH), depth)
       statistics(MAX_TIME_WINDOW) = max(statistics(MAX_TIME_WINDOW), round(timeWindow).toInt)
+    }
+  }
+
+  def statEventHandled() {
+    synchronized {
+      statistics(EVENTS_HANDLED) += 1
     }
   }
 }

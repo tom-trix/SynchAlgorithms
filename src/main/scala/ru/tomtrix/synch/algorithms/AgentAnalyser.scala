@@ -13,7 +13,7 @@ case class GraphInfo(graph: Set[Node], prevNode: Node)
 /**
  * GraphInfo
  */
-trait AgentAnalyser[T <: HashSerializable] extends Loggable { self: Model[T] =>
+trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   var graphs = Map[String, GraphInfo]()
   var timestamps = Map[String, Double]()
   var lockingEvent: Option[AgentEvent] = None
@@ -26,7 +26,7 @@ trait AgentAnalyser[T <: HashSerializable] extends Loggable { self: Model[T] =>
 
   def resumeModelling()
 
-  def handleDeadlockMessage()
+  def handleDeadlockMessage(m: DeadlockMessage)
 
   private def addNode(t: Double, agentname: String, node: Node) {
     synchronized {
@@ -66,8 +66,8 @@ trait AgentAnalyser[T <: HashSerializable] extends Loggable { self: Model[T] =>
               if (neighs.head.rolledBack > 0)
                 if (node.event.agent == neighs.head.event.recipient && node.event.recipient == neighs.head.event.agent) {
                   lockingEvent = Some(neighs.head.event)
+                  sendMessage(convertToActor(lockingEvent.get), DeadlockMessage(isSuspended = true))
                   suspendModelling()
-                  sendMessage(convertToActor(lockingEvent.get), DeadlockMessage)
                   logger debug s"Modelling is suspended! Detected: ${node.event}; waiting for ${lockingEvent.get}"
                 }
       }
@@ -78,8 +78,9 @@ trait AgentAnalyser[T <: HashSerializable] extends Loggable { self: Model[T] =>
     for {
       lock <- lockingEvent if convertToEvent(m) == lock
     } yield {
-      lockingEvent = None
+      sendMessage(convertToActor(lockingEvent.get), DeadlockMessage(isSuspended = false))
       resumeModelling()
+      lockingEvent = None
     }
   }
 

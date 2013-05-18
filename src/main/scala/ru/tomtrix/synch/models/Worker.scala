@@ -1,10 +1,11 @@
-package ru.tomtrix.synch
+package ru.tomtrix.synch.models
 
 import scala.util.Random
 import scala.compat.Platform
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import akka.actor.Cancellable
+import ru.tomtrix.synch._
 import ru.tomtrix.synch.MessageImplicits.EVENT_MESSAGE
 import ru.tomtrix.synch.algorithms.AgentEvent
 
@@ -19,7 +20,7 @@ object Worker extends App with Model[Stub] {
 
   def convertToEvent(m: EventMessage) = null
   def convertToActor(e: AgentEvent) = ""
-  def handleDeadlockMessage() {}
+  def handleDeadlockMessage(m: DeadlockMessage) {}
   def suspendModelling() {}
   def resumeModelling() {}
 

@@ -1,5 +1,6 @@
-package ru.tomtrix.synch
+package ru.tomtrix.synch.models
 
+import ru.tomtrix.synch._
 import ru.tomtrix.synch.algorithms.AgentEvent
 
 /**
@@ -9,7 +10,7 @@ object Starter extends App with Model[Stub] {
   def startModelling = Stub(0)
   def convertToEvent(m: EventMessage): AgentEvent = null
   def convertToActor(e: AgentEvent) = ""
-  def handleDeadlockMessage() {}
+  def handleDeadlockMessage(m: DeadlockMessage) {}
   def suspendModelling() {}
   def resumeModelling() {}
   while (true) {

@@ -12,7 +12,7 @@ import ru.tomtrix.synch.ApacheLogger._
 /**
  * Algorithm of classic optimistic synchronization
  */
-trait OptimisticSynchronizator[T <: HashSerializable] extends AgentAnalyser[T] { self: Model[T] =>
+trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { self: Model[T] =>
 
   /** stack to keep the previous states */
   private val stateStack = new ConcurrentLinkedDeque[(Double, Array[Byte])]()

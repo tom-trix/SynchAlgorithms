@@ -58,11 +58,6 @@ object TimeRequest extends Message {
   val sender = "Starter"
 }
 
-object DeadlockMessage extends Message {
-  val t = -1d
-  val sender = ""
-}
-
 /**
  * Information message used basicly for debugging
  * @param sender name of actor sending the message
@@ -98,11 +93,18 @@ case class StatResponse(t: Double, sender: String, statistics: Statistics) exten
  * @param sender name of actor sending the message
  * @param data message body
  */
-case class EventMessage(t: Double, sender: String, data: HashSerializable) extends Message {
+case class EventMessage(t: Double, sender: String, data: Serializable) extends Message {
   override def toString = {
     val msg = super.toString
     s"${msg.substring(0, msg.length-1)}; $data)"
   }
+}
+
+case class DeadlockMessage(isSuspended: Boolean) extends Message {
+  val t = -1d
+  val sender = ""
+
+  override def toString = s"DeadlockMessage(suspended=$isSuspended)"
 }
 
 /**
@@ -126,5 +128,5 @@ object MessageImplicits {
   object TIME_RESPONSE
   case class INFO_MESSAGE(text: String)
   case class STAT_RESPONSE(stat: Statistics)
-  case class EVENT_MESSAGE(data: HashSerializable)
+  case class EVENT_MESSAGE(data: Serializable)
 }
