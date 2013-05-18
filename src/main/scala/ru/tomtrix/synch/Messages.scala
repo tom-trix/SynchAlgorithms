@@ -74,6 +74,14 @@ case class InfoMessage(sender: String, text: String) extends Message {
  */
 case class TimeResponse(t: Double, sender: String) extends Message
 
+case class LockRequest(sender: String) extends Message {
+  val t = -1d
+}
+
+case class LockResponse(sender: String) extends Message {
+  val t = -1d
+}
+
 /**
  * Message informing about the current statistics gathered about the logic process (usually sent as a response to a <b>StopModelling</b> message)
  * @param t timestamp
@@ -98,13 +106,6 @@ case class EventMessage(t: Double, sender: String, data: Serializable) extends M
     val msg = super.toString
     s"${msg.substring(0, msg.length-1)}; $data)"
   }
-}
-
-case class DeadlockMessage(isSuspended: Boolean) extends Message {
-  val t = -1d
-  val sender = ""
-
-  override def toString = s"DeadlockMessage(suspended=$isSuspended)"
 }
 
 /**

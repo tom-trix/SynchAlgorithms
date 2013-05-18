@@ -15,7 +15,6 @@ object ModelTester extends App with Model[Stub] {
   def convertToActor(e: AgentEvent): String = ""
   def suspendModelling() {}
   def resumeModelling() {}
-  def handleDeadlockMessage(m: DeadlockMessage) {}
   def startModelling = Stub(0)
 
   var barrier = new BarrierSynch(actors.size)

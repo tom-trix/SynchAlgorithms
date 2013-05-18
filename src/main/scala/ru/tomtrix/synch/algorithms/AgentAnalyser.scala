@@ -2,8 +2,6 @@ package ru.tomtrix.synch.algorithms
 
 import scala.Some
 import ru.tomtrix.synch._
-import ru.tomtrix.synch.DeadlockMessage
-import ru.tomtrix.synch.EventMessage
 
 /**
  * GraphInfo
@@ -25,8 +23,6 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   def suspendModelling()
 
   def resumeModelling()
-
-  def handleDeadlockMessage(m: DeadlockMessage)
 
   private def addNode(t: Double, agentname: String, node: Node) {
     synchronized {
@@ -66,8 +62,8 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
               if (neighs.head.rolledBack > 0)
                 if (node.event.agent == neighs.head.event.recipient && node.event.recipient == neighs.head.event.agent) {
                   lockingEvent = Some(neighs.head.event)
-                  sendMessage(convertToActor(lockingEvent.get), DeadlockMessage(isSuspended = true))
                   suspendModelling()
+                  sendMessage(convertToActor(lockingEvent.get), LockRequest(actorname))
                   logger debug s"Modelling is suspended! Detected: ${node.event}; waiting for ${lockingEvent.get}"
                 }
       }
@@ -78,10 +74,20 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
     for {
       lock <- lockingEvent if convertToEvent(m) == lock
     } yield {
-      sendMessage(convertToActor(lockingEvent.get), DeadlockMessage(isSuspended = false))
       resumeModelling()
       lockingEvent = None
     }
+  }
+
+  def handleLockRequest(m: LockRequest) {
+    logger debug "LockRequest received"
+    lockingEvent foreach {t => sendMessage(m.sender, LockResponse(actorname))}
+  }
+
+  def handleLockResponse() {
+    logger debug "Force resuming..."
+    resumeModelling()
+    lockingEvent = None
   }
 
   def registerEvent(t: Double, event: AgentEvent, isSent: Boolean, isReceived: Boolean) {
@@ -93,8 +99,19 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   }
 
   def registerRollback(event: AgentEvent) {
+    handleLockResponse()
     addRollback(event.agent, event)
     addRollback(event.recipient, event)
+  }
+
+  def messageIsSafe(m: Message): Boolean = {
+    m match {
+      case g: EventMessage => if (convertToEvent(g).recipient == "SuperMarket") {
+        logger debug "Found message for SuperMarket"
+        true
+      } else false
+      case _ => false
+    }
   }
 
   def printGraphs() {

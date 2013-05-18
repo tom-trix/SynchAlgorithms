@@ -78,7 +78,7 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
   private def rollback(m: Message) {
     safe {
       synchronized {
-        log"ROLLBACK to ${m.t}"
+        log"ROLLBACK to ${m.t roundBy 3}"
         // pop all the states from the stack until find one with time < t
         var depth = 1
         var q = stateStack peek() //обязательно peek!
@@ -134,7 +134,9 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
         assert(m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
         log"Принято сообщение $m"
         statMessageReceived(m)
-        if (!timeIsLessThanMessage(getTime, m)) rollback(m)
+        if (!timeIsLessThanMessage(getTime, m))
+          if (!messageIsSafe(m))
+            rollback(m)
         // если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
         inputQueue find {_ == m} map {t => inputQueue -= m; log"Сообщения взаимно удалены: $m"} getOrElse {
           if (m.isInstanceOf[EventMessage]) {
