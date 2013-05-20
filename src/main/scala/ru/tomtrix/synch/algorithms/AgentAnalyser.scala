@@ -156,9 +156,11 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   }
 
   private def runPseudoEvent(e: TimeEvent): Boolean = {
-    logger debug "Запуск события $e"
+    logger debug s"Запуск события $e"
+    val events = simulateStep(e)
+    logger debug s"Были порождены следующие события: $events"
     val lst = for {
-      event <- simulateStep(e) if event.t < getTime
+      event <- events if event.t < getTime
     } yield if (isSafe(event))
         runPseudoEvent(event)
       else false
