@@ -135,21 +135,25 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
   final def handleMessage(m: BaseMessage) {
     safe {
       synchronized {
-        assert(m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
+        // 1. preparing
         log"Принято сообщение $m"
         statMessageReceived(m)
-        if (!timeIsLessThanMessage(getTime, m))
-          if (messageIsSafe(m)) {
-            log"Message $m is safe!!!"
-            m.asInstanceOf[EventMessage].timeevent.event.isSafe = true
-            //TODO перемешанность в стеке
+        // 2. проверка на Rollback
+        if (!timeIsLessThanMessage(getTime, m)) {
+          m match {
+            case em: EventMessage =>
+              if (isIndependent(em.timeevent)) {
+                log"Message $em is safe!!!"
+                em.timeevent.event.isSafe = true
+                //TODO перемешанность в стеке
+              } else {
+                rollbackIsSafe(em.timeevent)
+                rollback(m)
+              }
+            case _: AntiMessage => rollback(m)
           }
-          else {
-            if (m.isInstanceOf[EventMessage])
-              rollbackIsSafe(m.asInstanceOf[EventMessage].timeevent)
-            rollback(m)
-          }
-        // если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
+        }
+        // 3. если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
         m match {
           case _: AntiMessage => inputQueue find {_ == m} map {t =>
               inputQueue -= m

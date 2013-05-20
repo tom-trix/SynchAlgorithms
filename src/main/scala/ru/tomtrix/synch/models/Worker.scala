@@ -18,7 +18,7 @@ object Worker extends App with Model[Stub] {
   var scheduler: Cancellable = _
 
   def suspendModelling(suspend: Boolean) {}
-  def simulateStep(e: AgentEvent): Array[AgentEvent] = Array()
+  def simulateStep(e: TimeEvent): Array[TimeEvent] = Array()
 
   def startModelling = {
     scheduler = system.scheduler.schedule(0 seconds, 30 milliseconds) {

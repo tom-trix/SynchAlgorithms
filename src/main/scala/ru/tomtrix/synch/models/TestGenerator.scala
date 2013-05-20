@@ -70,7 +70,7 @@ object TestGenerator extends App with Model[Stub] {
   }
 
   def suspendModelling(suspend: Boolean) {}
-  def simulateStep(e: AgentEvent): Array[AgentEvent] = Array()
+  def simulateStep(e: TimeEvent): Array[TimeEvent] = Array()
 
   def startModelling = {
     nodes ++= actornames

@@ -9,7 +9,7 @@ import ru.tomtrix.synch.structures._
 object Starter extends App with Model[Stub] {
   def startModelling = Stub(0)
   def suspendModelling(suspend: Boolean) {}
-  def simulateStep(e: AgentEvent): Array[AgentEvent] = Array()
+  def simulateStep(e: TimeEvent): Array[TimeEvent] = Array()
 
   while (true) {
     readLine().toLowerCase.trim match {

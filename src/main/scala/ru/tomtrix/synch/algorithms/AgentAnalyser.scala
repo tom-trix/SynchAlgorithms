@@ -20,7 +20,7 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
 
   def suspendModelling(suspend: Boolean)
 
-  def simulateStep(e: AgentEvent): Array[AgentEvent]
+  def simulateStep(e: TimeEvent): Array[TimeEvent]
 
   private def addNode(t: Double, agentname: String, node: Node) {
     synchronized {
@@ -114,41 +114,55 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
     addRollback(event.patiens, event)
   }
 
-  def messageIsSafe(m: BaseMessage): Boolean = {
-    m match {
-      case em: EventMessage => Knowledge isIndependent em.timeevent.event
-      case _ => false
-    }
-  }
-
-  def correlate(e1: AgentEvent, e2: AgentEvent): Boolean =
-    e1.agens == e2.patiens || e1.patiens == e2.agens
+  def isIndependent(e: TimeEvent): Boolean = Knowledge isIndependent e.event
 
   def rollbackIsSafe(e: TimeEvent): Boolean = {
+    logger debug "Message $m has to be rolled back! Let's check it!"
+    if (isSafe(e))
+      runPseudoEvent(e)
+    else false
+  }
+
+  def correlate(cur: AgentEvent, that: AgentEvent): Boolean = cur.patiens match {
+    case that.agens => true
+    case that.patiens => true
+    case _ => false
+  }
+
+  private def isSafe(e: TimeEvent): Boolean = {
     safe {
       synchronized {
-        logger debug s"Stack contains ${stateStack.size()} elements"
+        // preparing
+        logger debug s"Проверяем, безопасно ли событие $e"
         var result = true
         var storage: List[(TimeEvent, Array[Byte])] = Nil
+        // просматриваем стек состояний (в направлении "в прошлое") с вершины до t = e.t
         var q = stateStack peek()
         while (result && q != null)
           q = if (q._1.t < e.t) null
           else {
             if (correlate(e.event, q._1.event)) result = false
-            storage ::= stateStack.pop()
-            stateStack.peek()
+            storage ::= stateStack pop()
+            stateStack peek()
           }
+        // заполняем стек обратно
         for {a <- storage}
           stateStack push a
-        logger debug s"Rollback is save = $result"
-        logger debug s"Stack contains ${stateStack.size()} elements"
+        // return
+        logger debug s"TimeEvent is save = $result"
         result
       }
     } getOrElse false
   }
 
-  def runPseudoEvent(m: EventMessage) {
-
+  private def runPseudoEvent(e: TimeEvent): Boolean = {
+    logger debug "Запуск события $e"
+    val lst = for {
+      event <- simulateStep(e) if event.t < getTime
+    } yield if (isSafe(event))
+        runPseudoEvent(event)
+      else false
+    lst forall {b => b}
   }
 
   def printGraphs() {
