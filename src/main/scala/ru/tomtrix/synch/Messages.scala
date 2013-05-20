@@ -1,3 +1,4 @@
+/*
 package ru.tomtrix.synch
 
 import java.util.UUID
@@ -23,7 +24,7 @@ sealed abstract class Message extends Serializable with Comparable[Message] {
     s"${getClass.getSimpleName}(${t roundBy 3}, $sender)"
   }
 
-  def compareTo(that: Message): Int = (t - that.t).toInt
+  def compareTo(that: Message): Int = (t - that.t).toInt            //TODO косяк
 }
 
 /**
@@ -130,4 +131,4 @@ object MessageImplicits {
   case class INFO_MESSAGE(text: String)
   case class STAT_RESPONSE(stat: Statistics)
   case class EVENT_MESSAGE(data: Serializable)
-}
+}*/

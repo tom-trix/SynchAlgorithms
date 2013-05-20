@@ -6,8 +6,7 @@ import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits._
 import akka.actor.Cancellable
 import ru.tomtrix.synch._
-import ru.tomtrix.synch.MessageImplicits.EVENT_MESSAGE
-import ru.tomtrix.synch.algorithms.AgentEvent
+import ru.tomtrix.synch.structures._
 
 /**
  * Simple logic process for <b>TestGenerator</b> with a primitive incremental model
@@ -18,21 +17,19 @@ object Worker extends App with Model[Stub] {
   /** akka scheduler for periodically sending the messages*/
   var scheduler: Cancellable = _
 
-  def convertToEvent(m: EventMessage) = null
-  def convertToActor(e: AgentEvent) = ""
-  def suspendModelling() {}
-  def resumeModelling() {}
+  def suspendModelling(suspend: Boolean) {}
+  def simulateStep(e: AgentEvent): Array[AgentEvent] = Array()
 
   def startModelling = {
     scheduler = system.scheduler.schedule(0 seconds, 30 milliseconds) {
       synchronized {
         logger debug s"time = $getTime, state = ${getState.n}"
         getState.n += 1
-        addTime(rand.nextInt(10)+1)
+        addTime(TimeEvent(rand.nextInt(10)+1, null))
         logger debug s"time = $getTime, state = ${getState.n}"
       }
       if (rand nextBoolean())
-        sendMessageToAll(EVENT_MESSAGE(Stub(0)))
+        sendMessageToAll(EventMessage(actorname, TimeEvent(getTime, AgentEvent("", "", ""))))
     }
     new Stub(0)
   }
@@ -42,7 +39,7 @@ object Worker extends App with Model[Stub] {
     synchronized {
       logger debug s"time = $getTime, state = ${getState.n}"
       getState.n += 1
-      addTime(rand.nextInt(10)+1)
+      addTime(TimeEvent(rand.nextInt(10)+1, null))
       logger debug s"time = $getTime, state = ${getState.n}"
     }
   }

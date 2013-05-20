@@ -2,8 +2,8 @@ package ru.tomtrix.synch
 
 import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.ApacheLogger._
-import ru.tomtrix.synch.MessageImplicits._
 import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
+import ru.tomtrix.synch.structures._
 
 /**
  * Abstract trait that your model should implement
@@ -12,7 +12,7 @@ import ru.tomtrix.synch.algorithms.OptimisticSynchronizator
 trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with OptimisticSynchronizator[T] with Loggable {
 
   /** model's time */
-  private var time: Double = _
+  private var time: Float = _
 
   /** model's state */
   private var state: T = _
@@ -31,22 +31,22 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
   }
 
   def onReceive() = {
-    case m: EventMessage => handleMessage(m)
-    case m: AntiMessage => handleMessage(m)
+    case m: BaseMessage => handleMessage(m)
     case m: LockRequest => handleLockRequest(m)
     case m: LockResponse => handleLockResponse()
-    case m: InfoMessage => logger info m.text
-    case TimeRequest => sendMessageToStarter(TIME_RESPONSE)
-    case StopMessage => sendMessageToStarter(STAT_RESPONSE(stopModelling()))
-    case StartMessage => setStateAndTime(0, startModelling); snapshot()
+    case m: TimeRequest => sendMessageToStarter(TimeResponse(actorname, time))
+    case StartMessage => setStateAndTime(0, startModelling); snapshot(null)
+    case StopMessage => sendMessageToStarter(StatResponse(actorname, stopModelling()))
     case _ => logger error s"Unknown message"
   }
 
   override def sendMessage(whom: String, m: Message) {
     safe {
       super.sendMessage(whom, m)
-      if (m.isInstanceOf[EventMessage] || m.isInstanceOf[AntiMessage])
-        statMessageSent(m)
+      m match {
+        case bm: BaseMessage => statMessageSent(bm)
+        case _ =>
+      }
       actors.get(whom) map {_ ! m} getOrElse logger.error(s"No such an actor: $whom")
       log"Послано сообщение $m"
     }
@@ -64,7 +64,7 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
    * @param t time
    * @param s state
    */
-  final def setStateAndTime(t: Double, s: T) {
+  final def setStateAndTime(t: Float, s: T) {
     synchronized {
       time = t
       state = s
@@ -74,11 +74,12 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
   /**
    * Changes the time of a model and performs a snapshot if it is necessary
    */
-  final def addTime(t: Double) {
+  final def addTime(e: TimeEvent) {
     safe {
       synchronized {
-        time += t
-        snapshot()
+        if (e.t < time) throw new RuntimeException("Time is wrapped!")
+        time = e.t
+        snapshot(e)
       }
     }
   }
@@ -100,11 +101,6 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
   def sendMessageToAll(m: Message) {
     actornames foreach {sendMessage(_, m)}
   }
-
-  implicit def toMessage(x: TIME_RESPONSE.type): TimeResponse = TimeResponse(getTime, actorname)
-  implicit def toMessage(x: INFO_MESSAGE): InfoMessage = InfoMessage(actorname, x.text)
-  implicit def toMessage(x: STAT_RESPONSE): StatResponse = StatResponse(getTime, actorname, x.stat)
-  implicit def toMessage(x: EVENT_MESSAGE): EventMessage = EventMessage(getTime, actorname, x.data)
 }
 
 /**

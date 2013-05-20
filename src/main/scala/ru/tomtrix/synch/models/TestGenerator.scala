@@ -10,7 +10,7 @@ import ru.tomtrix.synch._
 import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.ApacheLogger._
 import ru.tomtrix.synch.ModelObservable._
-import ru.tomtrix.synch.algorithms.AgentEvent
+import ru.tomtrix.synch.structures._
 
 /**
  * Case class that contains results of a single modelling launch
@@ -63,16 +63,14 @@ object TestGenerator extends App with Model[Stub] {
   safe {
     system.scheduler.schedule(500 milliseconds, 1 second) {
       synchronized {
-        nodes foreach {sendMessage(_, TimeRequest)}
+        nodes foreach {sendMessage(_, TimeRequest(actorname))}
       }
     }
     startModelling
   }
 
-  def convertToEvent(m: EventMessage) = null
-  def convertToActor(e: AgentEvent) = ""
-  def suspendModelling() {}
-  def resumeModelling() {}
+  def suspendModelling(suspend: Boolean) {}
+  def simulateStep(e: AgentEvent): Array[AgentEvent] = Array()
 
   def startModelling = {
     nodes ++= actornames

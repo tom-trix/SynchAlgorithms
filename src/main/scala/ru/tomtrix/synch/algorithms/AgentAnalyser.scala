@@ -2,6 +2,8 @@ package ru.tomtrix.synch.algorithms
 
 import scala.Some
 import ru.tomtrix.synch._
+import ru.tomtrix.synch.SafeCode._
+import ru.tomtrix.synch.structures._
 
 /**
  * GraphInfo
@@ -16,13 +18,9 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   var timestamps = Map[String, Double]()
   var lockingEvent: Option[AgentEvent] = None
 
-  def convertToEvent(m: EventMessage): AgentEvent
+  def suspendModelling(suspend: Boolean)
 
-  def convertToActor(e: AgentEvent): String
-
-  def suspendModelling()
-
-  def resumeModelling()
+  def simulateStep(e: AgentEvent): Array[AgentEvent]
 
   private def addNode(t: Double, agentname: String, node: Node) {
     synchronized {
@@ -50,7 +48,7 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   }
 
   private def forecastRollback(curNode: Node) {
-    synchronized {
+    /*synchronized {
       for {
         graphinfo <- graphs get curNode.event.agent
         node <- graphinfo.graph find {_ == curNode}
@@ -61,22 +59,20 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
             if (neighs.head.communicationType == RECEIVED)
               if (neighs.head.rolledBack > 0)
                 if (node.event.agent == neighs.head.event.recipient && node.event.recipient == neighs.head.event.agent) {
-                  lockingEvent = Some(neighs.head.event)
-                  suspendModelling()
+                  /*lockingEvent = Some(neighs.head.event)
+                  suspendModelling(suspend = true)
                   sendMessage(convertToActor(lockingEvent.get), LockRequest(actorname))
-                  logger debug s"Modelling is suspended! Detected: ${node.event}; waiting for ${lockingEvent.get}"
+                  logger debug s"Modelling is suspended! Detected: ${node.event}; waiting for ${lockingEvent.get}"*/
+                  suspend(node.event, neighs.head.event)
                 }
       }
-    }
+    }*/
   }
 
   def onMessageReceived(m: EventMessage) {
     for {
-      lock <- lockingEvent if convertToEvent(m) == lock
-    } yield {
-      resumeModelling()
-      lockingEvent = None
-    }
+      lock <- lockingEvent if m.timeevent.event == lock
+    } resume()
   }
 
   def handleLockRequest(m: LockRequest) {
@@ -85,33 +81,72 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   }
 
   def handleLockResponse() {
-    logger debug "Force resuming..."
-    resumeModelling()
+    logger debug "LockResponse received :( Force resuming..."
+    resume()
+  }
+
+  private def suspend(causedBy: AgentEvent, waitFor: AgentEvent, actor: String) {
+    lockingEvent = Some(waitFor)
+    logger debug s"Modelling is suspended! Detected: $causedBy; waiting for: $waitFor"
+    suspendModelling(suspend = true)
+    sendMessage(actor, LockRequest(actorname))
+  }
+
+  private def resume() {
+    suspendModelling(suspend = false)
     lockingEvent = None
   }
 
-  def registerEvent(t: Double, event: AgentEvent, isSent: Boolean, isReceived: Boolean) {
+  def registerEvent(e: TimeEvent, isSent: Boolean, isReceived: Boolean, actor: String) {
     assert(!(isSent && isReceived), "Message cannot be sent and received in the same time")
-    val node = Node(event, if (isSent) SENT else if (isReceived) RECEIVED else LOCAL)
-    addNode(t, event.agent, node)
-    addNode(t, event.recipient, node)
-    forecastRollback(node)
+    val node = Node(e.event, if (isSent) SENT else if (isReceived) RECEIVED else LOCAL)
+    addNode(e.t, e.event.agens, node)
+    addNode(e.t, e.event.patiens, node)
+    //forecastRollback(node)
+    Knowledge cause e.event foreach { w =>
+      if (isSent) suspend(e.event, w, actor)
+    }
   }
 
   def registerRollback(event: AgentEvent) {
-    handleLockResponse()
-    addRollback(event.agent, event)
-    addRollback(event.recipient, event)
+    resume()
+    addRollback(event.agens, event)
+    addRollback(event.patiens, event)
   }
 
-  def messageIsSafe(m: Message): Boolean = {
+  def messageIsSafe(m: BaseMessage): Boolean = {
     m match {
-      case g: EventMessage => if (convertToEvent(g).recipient == "SuperMarket") {
-        logger debug "Found message for SuperMarket"
-        true
-      } else false
+      case em: EventMessage => Knowledge isIndependent em.timeevent.event
       case _ => false
     }
+  }
+
+  def correlate(e1: AgentEvent, e2: AgentEvent): Boolean =
+    e1.agens == e2.patiens || e1.patiens == e2.agens
+
+  def rollbackIsSafe(e: TimeEvent): Boolean = {
+    safe {
+      synchronized {
+        var result = true
+        var storage: List[(TimeEvent, Array[Byte])] = Nil
+        var q = stateStack peek()
+        while (result && q != null)
+          q = if (q._1.t < e.t) null
+          else {
+            if (correlate(e.event, q._1.event)) result = false
+            storage ::= stateStack.pop()
+            stateStack.peek()
+          }
+        for {a <- storage}
+          stateStack push a
+        logger debug s"Rollback is save = $result"
+        result
+      }
+    } getOrElse false
+  }
+
+  def runPseudoEvent(m: EventMessage) {
+
   }
 
   def printGraphs() {

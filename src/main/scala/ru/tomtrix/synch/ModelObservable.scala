@@ -4,6 +4,7 @@ import scala.math._
 import scala.collection.mutable
 import org.apache.log4j.Logger
 import ru.tomtrix.synch.ModelObservable._
+import ru.tomtrix.synch.structures._
 
 /**
  * Category is a single statistics parameter
@@ -131,7 +132,7 @@ trait ModelObservable {
    * Captures information about received messages
    * @param m message
    */
-  def statMessageReceived(m: Message) {
+  def statMessageReceived(m: BaseMessage) {
     synchronized {
       statistics(RECEIVED_MESSAGES) += 1
       m match {

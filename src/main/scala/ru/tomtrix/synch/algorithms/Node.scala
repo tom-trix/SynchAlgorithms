@@ -1,11 +1,13 @@
 package ru.tomtrix.synch.algorithms
 
+import ru.tomtrix.synch.structures._
+
 sealed abstract class CommunicationType
 case object LOCAL extends CommunicationType
 case object SENT extends CommunicationType
 case object RECEIVED extends CommunicationType
 
-case class AgentEvent(agent: String, recipient: String, action: String)
+//case class AgentEvent(agent: String, recipient: String, action: String)
 
 case class Node(event: AgentEvent, communicationType: CommunicationType) {
   val arcs = new ProbabilityArcSet

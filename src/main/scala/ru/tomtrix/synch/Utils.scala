@@ -106,7 +106,15 @@ object StringUtils {
     }
   }
 
+  class RoundedFloat(f: Float) {
+    def roundBy(r: Int): String = {
+      val ds = f + ""
+      ds.substring(0, math.min(ds.indexOf(".") + r + 1, ds.length))
+    }
+  }
+
   implicit def toRoundedDouble(d: Double) = new RoundedDouble(d)
+  implicit def toRoundedFloat(f: Float) = new RoundedFloat(f)
 }
 
 class Java2Scala[V] {
