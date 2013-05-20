@@ -85,11 +85,11 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
     resume()
   }
 
-  private def suspend(causedBy: AgentEvent, waitFor: AgentEvent, actor: String) {
+  private def suspend(causedBy: AgentEvent, waitFor: AgentEvent, remoteActorname: String) {
     lockingEvent = Some(waitFor)
     logger debug s"Modelling is suspended! Detected: $causedBy; waiting for: $waitFor"
     suspendModelling(suspend = true)
-    sendMessage(actor, LockRequest(actorname))
+    sendMessage(remoteActorname, LockRequest(actorname))
   }
 
   private def resume() {
@@ -97,14 +97,14 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
     lockingEvent = None
   }
 
-  def registerEvent(e: TimeEvent, isSent: Boolean, isReceived: Boolean, actor: String) {
+  def registerEvent(e: TimeEvent, isSent: Boolean, isReceived: Boolean, remoteActorname: String) {
     assert(!(isSent && isReceived), "Message cannot be sent and received in the same time")
     val node = Node(e.event, if (isSent) SENT else if (isReceived) RECEIVED else LOCAL)
     addNode(e.t, e.event.agens, node)
     addNode(e.t, e.event.patiens, node)
     //forecastRollback(node)
     Knowledge cause e.event foreach { w =>
-      if (isSent) suspend(e.event, w, actor)
+      if (isSent) suspend(e.event, w, remoteActorname)
     }
   }
 
@@ -127,6 +127,7 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   def rollbackIsSafe(e: TimeEvent): Boolean = {
     safe {
       synchronized {
+        logger debug s"Stack contains ${stateStack.size()} elements"
         var result = true
         var storage: List[(TimeEvent, Array[Byte])] = Nil
         var q = stateStack peek()
@@ -140,6 +141,7 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
         for {a <- storage}
           stateStack push a
         logger debug s"Rollback is save = $result"
+        logger debug s"Stack contains ${stateStack.size()} elements"
         result
       }
     } getOrElse false

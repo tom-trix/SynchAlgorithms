@@ -50,7 +50,7 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
    * @return GVT
    */
   private def calculateGVTAndFreeMemory() = {
-    -1d //gvt вычисляется неверно!
+    -1f //gvt вычисляется неверно!
     /*val gvt = (gvtMap map { _._2 }).min
     log"gvt = $gvt"
     var q = stateStack peekLast()
@@ -139,19 +139,26 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
         log"Принято сообщение $m"
         statMessageReceived(m)
         if (!timeIsLessThanMessage(getTime, m))
-          if (!messageIsSafe(m)) {
+          if (messageIsSafe(m)) {
+            log"Message $m is safe!!!"
+            m.asInstanceOf[EventMessage].timeevent.event.isSafe = true
+            //TODO перемешанность в стеке
+          }
+          else {
             if (m.isInstanceOf[EventMessage])
               rollbackIsSafe(m.asInstanceOf[EventMessage].timeevent)
             rollback(m)
           }
-          else log"Message $m is safe!!!"
         // если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
-        inputQueue find {_ == m} map {t => inputQueue -= m; log"Сообщения взаимно удалены: $m"} getOrElse
-          m match {
-            case em: EventMessage =>
-              inputQueue = (inputQueue += em).sorted
-              onMessageReceived(em)
-          }
+        m match {
+          case _: AntiMessage => inputQueue find {_ == m} map {t =>
+              inputQueue -= m
+              log"Сообщения взаимно удалены: $m"
+            } orElse {throw new RuntimeException(s"Unhandled $m")}
+          case em: EventMessage =>
+            inputQueue = (inputQueue += em).sorted
+            onMessageReceived(em)
+        }
       }
     }
   }

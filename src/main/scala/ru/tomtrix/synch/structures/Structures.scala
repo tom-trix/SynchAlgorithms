@@ -6,6 +6,8 @@ import ru.tomtrix.synch.ModelObservable._
 
 case class AgentEvent(agens: String, patiens: String, predicate: String) {
   var userdata: java.io.Serializable = None
+  var isSafe = false
+
   def withData(d: java.io.Serializable) = {this.userdata = d; this}
 }
 

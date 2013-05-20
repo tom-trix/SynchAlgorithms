@@ -35,7 +35,7 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
     case m: LockRequest => handleLockRequest(m)
     case m: LockResponse => handleLockResponse()
     case m: TimeRequest => sendMessageToStarter(TimeResponse(actorname, time))
-    case StartMessage => setStateAndTime(0, startModelling); snapshot(null)
+    case StartMessage => setStateAndTime(0, startModelling); snapshot(TimeEvent(0, null))
     case StopMessage => sendMessageToStarter(StatResponse(actorname, stopModelling()))
     case _ => logger error s"Unknown message"
   }
@@ -77,7 +77,7 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
   final def addTime(e: TimeEvent) {
     safe {
       synchronized {
-        if (e.t < time) throw new RuntimeException("Time is wrapped!")
+        if (e.t < time && !e.event.isSafe) throw new RuntimeException("Time is wrapped!")
         time = e.t
         snapshot(e)
       }
