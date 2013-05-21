@@ -35,11 +35,13 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
     synchronized {
       m match {
         case em: EventMessage =>
+          // если сообщение пришло "из прошлого", его нужно впихнуть в середину стека (аля Ханойские башни)
+          var storage: List[(EventMessage, String)] = Nil
+          while (msgStack.size > 0 && msgStack.peek._1.t > em.t)
+            storage ::= msgStack pop()
           msgStack push (em, whom)
-          if (msgStack.size > 10000) {
-            msgStack pollLast()
-            logger error "stack overflown"
-          }
+          /*for {a <- storage}
+            msgStack push a*/
         case _ =>
       }
     }
@@ -101,7 +103,9 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
         while (w != null)
           w = if (timeIsLessThanMessage(w._1.t, m)) null
           else {
-            sendMessage(w._2, new AntiMessage(actorname, w._1))
+            val am = AntiMessage(actorname, w._1)
+            sendMessage(w._2, am)
+            resumeByAntimessage(am)
             msgStack pop()
             msgStack peek()
           }
@@ -123,6 +127,16 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
         assert(msgStack.isEmpty || msgStack.peek()._1.t <= m.t)
         assert(msgStack.isEmpty || msgStack.peekLast()._1.t >= gvt)
         assert(stateStack.isEmpty || stateStack.peekLast()._1.t >= gvt)
+
+        //full stack assertions
+        var lst = stateStack.toArray(Array[(TimeEvent, Array[Byte])]()).toList map {_._1.t}
+        if (lst.size > 0) lst reduce { (a, b) =>
+          assert(a >= b, s"StateStack corrupted: $a < $b"); b
+        }
+        lst = msgStack.toArray(Array[(EventMessage, String)]()).toList map {_._1.t}
+        if (lst.size > 0) lst reduce { (a, b) =>
+          assert(a >= b, s"MessageStack corrupted: $a < $b"); b
+        }
       }
     }
   }
@@ -169,12 +183,14 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
     */
   final def snapshot(e: TimeEvent) {
     synchronized {
+      // если прищло безопасное событие "из прошлого" - его нужно впихнуть в середину стека (аля Ханойские башни)
+      var storage: List[(TimeEvent, Array[Byte])] = Nil
+      while (stateStack.size > 0 && stateStack.peek._1.t > e.t)
+        storage ::= stateStack pop()
       stateStack push e -> serialize(getState)
+      for {a <- storage}
+        stateStack push a
       log"Time = ${getTime.roundBy(3)}; State = $getState"
-      if (stateStack.size > 10000) {
-        stateStack pollLast()
-        logger error "stack overflown"
-      }
     }
   }
 

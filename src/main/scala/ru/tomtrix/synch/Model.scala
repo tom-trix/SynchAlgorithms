@@ -81,7 +81,10 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
           time = e.t
           snapshot(e)
         }
-        else log"Обработано событие из прошлого $e"   //TODO else special snapshot
+        else {
+          log"Обработано событие из прошлого $e"
+          snapshot(e)
+        }   //TODO else special snapshot
       }
     }
   }
