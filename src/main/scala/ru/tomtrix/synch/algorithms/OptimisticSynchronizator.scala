@@ -144,12 +144,9 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
             case em: EventMessage =>
               if (isIndependent(em.timeevent)) {
                 log"Message $em is safe!!!"
-                em.timeevent.event.isSafe = true
                 //TODO перемешанность в стеке
-              } else {
-                rollbackIsSafe(em.timeevent)
+              } else if (!rollbackIsSafe(em.timeevent))
                 rollback(m)
-              }
             case _: AntiMessage => rollback(m)
           }
         }

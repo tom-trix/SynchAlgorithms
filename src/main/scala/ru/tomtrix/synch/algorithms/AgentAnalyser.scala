@@ -22,6 +22,8 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
 
   def simulateStep(e: TimeEvent): Array[TimeEvent]
 
+  def isLocal(e: AgentEvent): Boolean
+
   private def addNode(t: Double, agentname: String, node: Node) {
     synchronized {
       // add the node into a graph (since Graph is a set, multiply nodes will be resolved into a single one)
@@ -98,6 +100,7 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   }
 
   def registerEvent(e: TimeEvent, isSent: Boolean, isReceived: Boolean, remoteActorname: String) {
+    // TODO isReceived можно определить локально методом isLocal
     assert(!(isSent && isReceived), "Message cannot be sent and received in the same time")
     val node = Node(e.event, if (isSent) SENT else if (isReceived) RECEIVED else LOCAL)
     addNode(e.t, e.event.agens, node)
@@ -117,17 +120,15 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   def isIndependent(e: TimeEvent): Boolean = Knowledge isIndependent e.event
 
   def rollbackIsSafe(e: TimeEvent): Boolean = {
-    logger debug "Message $m has to be rolled back! Let's check it!"
-    if (isSafe(e))
+    logger debug s"Event $e has to be rolled back! Let's check it!"
+    val result = if (isSafe(e))
       runPseudoEvent(e)
     else false
+    logger debug s"Общий итог: $result"
+    result
   }
 
-  def correlate(cur: AgentEvent, that: AgentEvent): Boolean = cur.patiens match {
-    case that.agens => true
-    case that.patiens => true
-    case _ => false
-  }
+  def correlate(cur: AgentEvent, that: AgentEvent): Boolean = cur.patiens == that.patiens
 
   private def isSafe(e: TimeEvent): Boolean = {
     safe {
@@ -141,7 +142,8 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
         while (result && q != null)
           q = if (q._1.t < e.t) null
           else {
-            if (correlate(e.event, q._1.event)) result = false
+            if (isLocal(q._1.event) && correlate(e.event, q._1.event))
+              result = false
             storage ::= stateStack pop()
             stateStack peek()
           }
@@ -157,7 +159,7 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
 
   private def runPseudoEvent(e: TimeEvent): Boolean = {
     logger debug s"Запуск события $e"
-    val events = simulateStep(e)
+    val events = simulateStep(e).toSeq
     logger debug s"Были порождены следующие события: $events"
     val lst = for {
       event <- events if event.t < getTime

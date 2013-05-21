@@ -19,7 +19,7 @@ object Worker extends App with Model[Stub] {
 
   def suspendModelling(suspend: Boolean) {}
   def simulateStep(e: TimeEvent): Array[TimeEvent] = Array()
-
+  def isLocal(e: AgentEvent) = true
   def startModelling = {
     scheduler = system.scheduler.schedule(0 seconds, 30 milliseconds) {
       synchronized {

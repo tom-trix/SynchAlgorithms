@@ -14,6 +14,7 @@ object ModelTester extends App with Model[Stub] {
   def suspendModelling(suspend: Boolean) {}
   def simulateStep(e: TimeEvent): Array[TimeEvent] = Array()
   def startModelling = Stub(0)
+  def isLocal(e: AgentEvent) = true
 
   var barrier = new BarrierSynch(actors.size)
   var stopped = false

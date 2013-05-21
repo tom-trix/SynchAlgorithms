@@ -71,7 +71,7 @@ object TestGenerator extends App with Model[Stub] {
 
   def suspendModelling(suspend: Boolean) {}
   def simulateStep(e: TimeEvent): Array[TimeEvent] = Array()
-
+  def isLocal(e: AgentEvent) = true
   def startModelling = {
     nodes ++= actornames
     sendMessageToAll(StartMessage)

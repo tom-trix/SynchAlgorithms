@@ -77,9 +77,11 @@ trait Model[T <: Serializable] extends Communicator[T] with ModelObservable with
   final def addTime(e: TimeEvent) {
     safe {
       synchronized {
-        if (e.t < time && !e.event.isSafe) throw new RuntimeException("Time is wrapped!")
-        time = e.t
-        snapshot(e)
+        if (e.t >= time) {
+          time = e.t
+          snapshot(e)
+        }
+        else log"Обработано событие из прошлого $e"   //TODO else special snapshot
       }
     }
   }

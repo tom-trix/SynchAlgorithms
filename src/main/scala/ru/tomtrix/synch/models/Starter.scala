@@ -10,6 +10,7 @@ object Starter extends App with Model[Stub] {
   def startModelling = Stub(0)
   def suspendModelling(suspend: Boolean) {}
   def simulateStep(e: TimeEvent): Array[TimeEvent] = Array()
+  def isLocal(e: AgentEvent) = true
 
   while (true) {
     readLine().toLowerCase.trim match {
