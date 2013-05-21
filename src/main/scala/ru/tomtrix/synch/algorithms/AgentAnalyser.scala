@@ -123,6 +123,12 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
     addRollback(event.patiens, event)
   }
 
+  def isOK(e: TimeEvent): Boolean = {
+    if (isIndependent(e)) true
+    else if (isSafe(e)) runPseudoEvent(e)
+    else false
+  }
+
   def isIndependent(e: TimeEvent): Boolean = Knowledge isIndependent e.event
 
   def rollbackIsSafe(e: TimeEvent): Boolean = {
@@ -139,26 +145,29 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
   private def isSafe(e: TimeEvent): Boolean = {
     safe {
       synchronized {
-        // preparing
         logger debug s"Проверяем, безопасно ли событие $e"
-        var result = true
-        var storage: List[(TimeEvent, Array[Byte])] = Nil
-        // просматриваем стек состояний (в направлении "в прошлое") с вершины до t = e.t
-        var q = stateStack peek()
-        while (result && q != null)
-          q = if (q._1.t < e.t) null
-          else {
-            if (isLocal(q._1.event) && correlate(e.event, q._1.event))
-              result = false
-            storage ::= stateStack pop()
-            stateStack peek()
-          }
-        // заполняем стек обратно
-        for {a <- storage}
-          stateStack push a
-        // return
-        logger debug s"TimeEvent is save = $result"
-        result
+        // если событие "stateless", то оно априори безопасно
+        if (Knowledge isStateless e.event) {logger debug "Событие stateless"; true}
+        else {
+          // просматриваем стек состояний (в направлении "в прошлое") с вершины до t = e.t
+          var result = true
+          var storage: List[(TimeEvent, Array[Byte])] = Nil
+          var q = stateStack peek()
+          while (result && q != null)
+            q = if (q._1.t < e.t) null
+            else {
+              if (isLocal(q._1.event) && correlate(e.event, q._1.event))
+                result = false
+              storage ::= stateStack pop()
+              stateStack peek()
+            }
+          // заполняем стек обратно
+          for {a <- storage}
+            stateStack push a
+          // return
+          logger debug s"TimeEvent is save = $result"
+          result
+        }
       }
     } getOrElse false
   }
@@ -169,9 +178,7 @@ trait AgentAnalyser[T <: Serializable] extends Loggable { self: Model[T] =>
     logger debug s"Были порождены следующие события: $events"
     val lst = for {
       event <- events if event.t < getTime
-    } yield if (isSafe(event))
-        runPseudoEvent(event)
-      else false
+    } yield isOK(event)
     lst forall {b => b}
   }
 

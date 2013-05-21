@@ -26,4 +26,11 @@ object Knowledge {
       case _ => None
     }
   }
+
+  def isStateless(e: AgentEvent): Boolean = e.patiens match {
+    case "Guard" => true
+    case "SuperMarket" => true
+    case s if s.startsWith("Purchaser") => true
+    case _ => false
+  }
 }
