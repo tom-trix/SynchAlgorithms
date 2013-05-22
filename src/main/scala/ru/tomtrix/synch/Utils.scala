@@ -1,18 +1,19 @@
 package ru.tomtrix.synch
 
 import java.io._
-import scala.collection.JavaConversions
 
 /**
- * Log4j apache logger
+ * Log4j Apache logger
  */
 object ApacheLogger extends Loggable {
 
-  /** String interpolation feature */
+  /**
+   * String interpolation feature
+   */
   implicit class LogHelper(val sc: StringContext) extends AnyVal {
     /** Syntax sugar for "logger.debug(s)"
      * @since 2.10
-     * @example {{{ log"My age is ${h -1}" }}}*/
+     * @example {{{ log"My age is ${h-1}" }}}*/
     def log(args: Any*) {
       val strings = sc.parts.iterator
       val expressions = args.iterator
@@ -67,7 +68,7 @@ object Serializer {
 object SafeCode extends Loggable {
   /**
    * Wrappes the code so that all the exceptions/errors will be catched and logged.<br>
-   * If you don't want errors to be logged please use {@link ru.tomtrix.synch.SafeCode#safe$ safe$} method
+   * If you don't want errors to be logged please use [[ru.tomtrix.synch.SafeCode#safe$ safe$]] method
    * @param func your code
    * @param finallyFunc code that must be run in a finally clause
    * @param log shows whether the exception/error should be logged
@@ -89,7 +90,7 @@ object SafeCode extends Loggable {
 
   /**
    * Wrappes the code so that all the exceptions/errors will be catched but NOT logged.<br>
-   * If you want errors to be logged please use {@link ru.tomtrix.synch.SafeCode#safe safe} method
+   * If you want errors to be logged please use [[ru.tomtrix.synch.SafeCode#safe safe]] method
    * @param func your code
    * @param finallyFunc code that must be run in a finally clause
    * @tparam T type parameter
@@ -98,15 +99,35 @@ object SafeCode extends Loggable {
   def safe$[T](func: => T, finallyFunc: => Unit = {}): Option[T] = safe(func, finallyFunc, log = false)
 }
 
+/**
+ * Provides some features to operate strings (e.g. [[ru.tomtrix.synch.StringUtils.RoundedDouble#roundBy roundBy]])
+ */
 object StringUtils {
+
+  /**
+   * Provides an implicit method for [[ru.tomtrix.synch.StringUtils.RoundedDouble#roundBy roundBy]]
+   * @param d number to round
+   */
   class RoundedDouble(d: Double) {
+    /**
+     * @param r number of digits after the dot
+     * @return a string that represents the number rounded with <b>r</b> digits after the dot
+     */
     def roundBy(r: Int): String = {
       val ds = d.toString
       ds.substring(0, math.min(ds.indexOf(".") + r + 1, ds.length))
     }
   }
 
+  /**
+   * Provides an implicit method for [[ru.tomtrix.synch.StringUtils.RoundedFloat#roundBy roundBy]]
+   * @param f number to round
+   */
   class RoundedFloat(f: Float) {
+    /**
+     * @param r number of digits after the dot
+     * @return a string that represents the number rounded with <b>r</b> digits after the dot
+     */
     def roundBy(r: Int): String = {
       val ds = f + ""
       ds.substring(0, math.min(ds.indexOf(".") + r + 1, ds.length))
@@ -115,10 +136,6 @@ object StringUtils {
 
   implicit def toRoundedDouble(d: Double) = new RoundedDouble(d)
   implicit def toRoundedFloat(f: Float) = new RoundedFloat(f)
-}
-
-class Java2Scala[V] {
-  def asSet(s: java.util.Set[V]): Set[V] = JavaConversions.asScalaSet(s).toSet
 }
 
 /**

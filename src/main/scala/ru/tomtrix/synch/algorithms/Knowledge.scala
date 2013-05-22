@@ -3,7 +3,7 @@ package ru.tomtrix.synch.algorithms
 import ru.tomtrix.synch.structures._
 
 /**
- * Knowledge
+ * Temporary object
  */
 object Knowledge {
   def isIndependent(e: AgentEvent): Boolean = {

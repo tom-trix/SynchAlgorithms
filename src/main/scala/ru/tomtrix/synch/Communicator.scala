@@ -2,42 +2,45 @@ package ru.tomtrix.synch
 
 import akka.actor._
 import com.typesafe.config.ConfigFactory
-import ru.tomtrix.synch.SafeCode._
 
 /**
- * Agent that is responsible for sending and receiving messages
+ * Trait that is responsible for sending and receiving messages
  */
-trait Communicator[T <: Serializable] { self: Model[T] =>
+trait Communicator[T <: Serializable] { self: Simulator[T] =>
 
-  /** Actor to receive messages */
+  /**
+   * Actor to receive messages
+   */
   object Receiver extends Actor {
     def receive = onReceive()
   }
 
   /**
-   * @return Partial function that handles the received messages
+   * @return partial function that handles the received messages
    */
   def onReceive(): PartialFunction[Any, Unit]
 
+  /** Configuration (from <b>application.conf</b>) */
   private val conf = ConfigFactory load()
 
-  val systemname = conf getString "actors.system"
+  /** Akka system name */
+  private val systemname = conf getString "actors.system"
 
+  /** Addresses of neighbours */
+  private val actorAddresses = conf.getStringList("actors.others").toArray(Array("")).toList
+
+  /** Akka system */
   val system = ActorSystem(systemname)
 
+  /** Actor's name*/
   val actorname = conf getString "actors.name"
 
-  val actor = system actorOf(Props(Receiver), actorname)
-
-  val actorAddresses = conf.getStringList("actors.others").toArray(Array("")).toList
-
+  /** Neighbours' names */
   val actornames = actorAddresses map {_.split("/")(2)}
 
+  /** Map actorname -> actor */
   val actors = (actornames zip actorAddresses.map{t => system actorFor s"akka://$systemname@$t"}).toMap
 
-  val starter = safe$ {
-    system actorFor s"akka://$systemname@${conf getString "actors.starter"}"
-  }
-
-  logger info s"Actor $actor ($actorname) loaded"
+  system actorOf(Props(Receiver), name = actorname)
+  logger info s"$actorname loaded"
 }

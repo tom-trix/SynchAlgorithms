@@ -5,14 +5,14 @@ import scala.collection.mutable.ListBuffer
 import ru.tomtrix.synch._
 import ru.tomtrix.synch.SafeCode._
 import ru.tomtrix.synch.Serializer._
+import ru.tomtrix.synch.structures._
 import ru.tomtrix.synch.StringUtils._
 import ru.tomtrix.synch.ApacheLogger._
-import ru.tomtrix.synch.structures._
 
 /**
- * Algorithm of classic optimistic synchronization
+ * Algorithm of an optimistic synchronization
  */
-trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { self: Model[T] =>
+trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable /*with Analyser[T]*/ { self: Simulator[T] =>
 
   /** stack to keep the previous states */
   val stateStack = new ConcurrentLinkedDeque[(TimeEvent, Array[Byte])]()
@@ -23,8 +23,10 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
   /** special queue to store the input messages */
   private var inputQueue = ListBuffer[BaseMessage]()
 
-  /** map: actor -> GVT_estimate (so that GVT is a minimum of the estimates) */
-  private var gvtMap = (actornames map {_ -> 0d}).toMap
+  override def stopModelling() = {
+    resetBuffers()
+    super.stopModelling()
+  }
 
   /**
    * Sends message <b>m</b> to <b>whom</b>
@@ -41,39 +43,37 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
             storage ::= msgStack pop()
           msgStack push (em, whom)
           /*for {a <- storage}
-            msgStack push a*/
+            msgStack push a*/  //TODO
+          statMessageSent(em)
+        case am: AntiMessage => statMessageSent(am)
         case _ =>
       }
     }
   }
 
   /**
-   * Calculates GVT and frees memory by removing all the states/messages with a timestamp that less than GVT
-   * @return GVT
+   * Commits the event and performs the snapshot
+   * <br><b>BE CAREFUL!</b> this must be invoked <b>AFTER</b> the time is changed!
+   * @param e handled time-event
    */
-  private def calculateGVTAndFreeMemory() = {
-    -1f //gvt вычисляется неверно!
-    /*val gvt = (gvtMap map { _._2 }).min
-    log"gvt = $gvt"
-    var q = stateStack peekLast()
-    while (q != null)
-      q = if (q._1 < gvt) {
-        stateStack pollLast()
-        stateStack peekLast()
-      }
-      else null
-    var w = msgStack peekLast()
-    while (w != null)
-      w = if (w._1.t < gvt) {
-        msgStack pollLast()
-        msgStack peekLast()
-      }
-      else null
-    gvt*/
+  /*override*/ def commitEvent(e: TimeEvent) {
+    snapshot(e)
+    statEventHandled()
+    //super.commitEvent(e)
   }
 
-  def timeIsLessThanMessage(t: Double, m: BaseMessage) =
-    if (m.isInstanceOf[AntiMessage]) t < m.t else t <= m.t
+  /**
+   * Rather weird function...
+   * <br>Returns true if <b>t</b> is less than message time: STRICTLY for Antimessages and NOT STRICTLY otherwise
+   * @param t timestamp
+   * @param m EventMessage or AntiMessage
+   * @return
+   */
+  private def timeIsLessThanMessage(t: Double, m: BaseMessage): Boolean = m match {
+    case _: EventMessage => t <= m.t
+    case _: AntiMessage => t < m.t
+    case _ => false
+  }
 
   /**
    * Performs rollback to a prevoius consistent state
@@ -105,28 +105,15 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
           else {
             val am = AntiMessage(actorname, w._1)
             sendMessage(w._2, am)
-            resumeByAntimessage(am)
+            /*resumeByAntimessage(am)*/
             msgStack pop()
             msgStack peek()
           }
-
-        // calculate GVT & remove useless state/messages to free memory
-        if (m.isInstanceOf[EventMessage])  //IMPORTANT!!!
-          gvtMap += m.sender -> getTime
-        val gvt = calculateGVTAndFreeMemory()
-
-        // remember the rollback
-        m match {
-          case em: EventMessage => registerRollback(em.timeevent.event)
-          case _ =>
-        }
 
         //assert that everything is OK
         log"Time = ${getTime.roundBy(3)}; State = $getState"
         assert(getTime <= m.t, s"getTime = $getTime, t = ${m.t}")
         assert(msgStack.isEmpty || msgStack.peek()._1.t <= m.t)
-        assert(msgStack.isEmpty || msgStack.peekLast()._1.t >= gvt)
-        assert(stateStack.isEmpty || stateStack.peekLast()._1.t >= gvt)
 
         //full stack assertions
         var lst = stateStack.toArray(Array[(TimeEvent, Array[Byte])]()).toList map {_._1.t}
@@ -153,18 +140,11 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
         log"Принято сообщение $m"
         statMessageReceived(m)
         // 2. проверка на Rollback
-        if (!timeIsLessThanMessage(getTime, m)) {
+        if (!timeIsLessThanMessage(getTime, m))
           m match {
-            case em: EventMessage =>
-              /*if (isIndependent(em.timeevent)) {
-                log"Message $em is independent!!!"
-                //TODO перемешанность в стеке
-              } else if (!rollbackIsSafe(em.timeevent))
-                rollback(m)*/
-              if (!isOK(em.timeevent)) rollback(m)
+            case em: EventMessage => /*if (!isOK(em.timeevent))*/ rollback(m)
             case _: AntiMessage => rollback(m)
           }
-        }
         // 3. если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
         m match {
           case _: AntiMessage => inputQueue find {_ == m} map {t =>
@@ -173,7 +153,7 @@ trait OptimisticSynchronizator[T <: Serializable] extends AgentAnalyser[T] { sel
             } orElse {throw new RuntimeException(s"Unhandled $m")}
           case em: EventMessage =>
             inputQueue = (inputQueue += em).sorted
-            onMessageReceived(em)
+            /*checkUpMessage(em)*/
         }
       }
     }

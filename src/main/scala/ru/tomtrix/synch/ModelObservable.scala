@@ -14,12 +14,10 @@ abstract sealed class Category extends Serializable {
 }
 
 /**
- * Companion for {@link ru.tomtrix.synch.ModelObservable ModelObservable} trait
+ * Companion for [[ru.tomtrix.synch.ModelObservable ModelObservable]]
  */
 object ModelObservable {
-  /**
-   * Special alias for <b>Map[Category, Double]</b>
-   */
+  /** Special alias for <b>Map[Category, Double]</b> */
   type Statistics = Map[Category, Double]
 
   /** Total amount of events handled by a logic process */
@@ -65,9 +63,7 @@ object ModelObservable {
  * Trait that adds the functionality of Information Procedures. It collects and aggregates the statistics
  */
 trait ModelObservable {
-  /**
-   * Main statistics map: Category -> value
-   */
+  /** Main statistics map: Category -> value */
   private val statistics = mutable.HashMap(
     EVENTS_HANDLED -> 0d,
     RECEIVED_MESSAGES -> 0d,
@@ -117,7 +113,7 @@ trait ModelObservable {
    * Captures information about sent messages
    * @param m message
    */
-  def statMessageSent(m: Message) {
+  def statMessageSent(m: BaseMessage) {
     synchronized {
       statistics(SENT_MESSAGES) += 1
       m match {
@@ -167,6 +163,9 @@ trait ModelObservable {
     }
   }
 
+  /**
+   * Captures information about handled events
+   */
   def statEventHandled() {
     synchronized {
       statistics(EVENTS_HANDLED) += 1
