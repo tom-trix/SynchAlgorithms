@@ -12,7 +12,7 @@ import ru.tomtrix.synch.ApacheLogger._
 /**
  * Algorithm of an optimistic synchronization
  */
-trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable /*with Analyser[T]*/ { self: Simulator[T] =>
+trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable with Analyser[T] { self: Simulator[T] =>
 
   /** stack to keep the previous states */
   val stateStack = new ConcurrentLinkedDeque[(TimeEvent, Array[Byte])]()
@@ -42,8 +42,8 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable /*with
           while (msgStack.size > 0 && msgStack.peek._1.t > em.t)
             storage ::= msgStack pop()
           msgStack push (em, whom)
-          /*for {a <- storage}
-            msgStack push a*/  //TODO
+          for {a <- storage}
+            msgStack push a
           statMessageSent(em)
         case am: AntiMessage => statMessageSent(am)
         case _ =>
@@ -56,10 +56,10 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable /*with
    * <br><b>BE CAREFUL!</b> this must be invoked <b>AFTER</b> the time is changed!
    * @param e handled time-event
    */
-  /*override*/ def commitEvent(e: TimeEvent) {
+  override def commitEvent(e: TimeEvent) {
     snapshot(e)
     statEventHandled()
-    //super.commitEvent(e)
+    super.commitEvent(e)
   }
 
   /**
@@ -105,7 +105,7 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable /*with
           else {
             val am = AntiMessage(actorname, w._1)
             sendMessage(w._2, am)
-            /*resumeByAntimessage(am)*/
+            resumeByAntimessage(am)
             msgStack pop()
             msgStack peek()
           }
@@ -142,7 +142,7 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable /*with
         // 2. проверка на Rollback
         if (!timeIsLessThanMessage(getTime, m))
           m match {
-            case em: EventMessage => /*if (!isOK(em.timeevent))*/ rollback(m)
+            case em: EventMessage => if (!isOK(em.timeevent)) rollback(m)
             case _: AntiMessage => rollback(m)
           }
         // 3. если такое же сообщение уже есть (т.е. мы получили антисообщение), то удаляем оба, иначе просто добавляем сообщение во входную очередь
@@ -153,7 +153,7 @@ trait OptimisticSynchronizator[T <: Serializable] extends ModelObservable /*with
             } orElse {throw new RuntimeException(s"Unhandled $m")}
           case em: EventMessage =>
             inputQueue = (inputQueue += em).sorted
-            /*checkUpMessage(em)*/
+            checkUpMessage(em)
         }
       }
     }

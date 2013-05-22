@@ -32,8 +32,8 @@ trait Simulator[T <: Serializable] extends Communicator[T] with OptimisticSynchr
 
   def onReceive() = {
     case m: BaseMessage => handleMessage(m)
-    case m: LockRequest => /*handleLockRequest(m)*/
-    case m: LockResponse => /*handleLockResponse()*/
+    case m: LockRequest => handleLockRequest(m)
+    case m: LockResponse => handleLockResponse()
     case m: TimeRequest => sendMessage(m.sender, TimeResponse(actorname, time))
     case m: StopMessage => sendMessage(m.sender, StatResponse(actorname, stopModelling()))
     case StartMessage => setStateAndTime(0, startModelling); snapshot(TimeEvent(0, null))
